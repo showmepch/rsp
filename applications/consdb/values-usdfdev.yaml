@@ -1,0 +1,18 @@
+db:
+  user: "usdf"
+  passwordkey: "oods-password"
+  host: "usdf-summitdb-replica.slac.stanford.edu"
+  database: "exposurelog"
+hinfo:
+  latiss:
+    enable: false
+    tag: "24.10.3"
+  lsstcomcam:
+    enable: false
+    tag: "24.10.3"
+  lsstcam:
+    enable: false
+    tag: "24.10.3"
+pq:
+  image:
+    tag: "25.3.2"

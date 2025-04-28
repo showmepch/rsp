@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vo-cutouts-db-worker
+  labels:
+    {{- include "vo-cutouts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.databaseWorker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vo-cutouts.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: "db-worker"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.databaseWorker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "vo-cutouts.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: "db-worker"
+        vo-cutouts-redis-client: "true"
+    spec:
+      {{- with .Values.databaseWorker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      containers:
+        - name: "db-worker"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "all"
+            readOnlyRootFilesystem: true
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          command:
+            - "arq"
+            - "vocutouts.workers.uws.WorkerSettings"
+          env:
+            - name: "CUTOUT_ARQ_QUEUE_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "vo-cutouts"
+                  key: "redis-password"
+            {{- if .Values.config.slackAlerts }}
+            - name: "CUTOUT_SLACK_WEBHOOK"
+              valueFrom:
+                secretKeyRef:
+                  name: "vo-cutouts"
+                  key: "slack-webhook"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: "vo-cutouts"
+          {{- with .Values.databaseWorker.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      {{- with .Values.databaseWorker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.databaseWorker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

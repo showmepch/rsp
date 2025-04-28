@@ -1,0 +1,62 @@
+# Use the CSI storage class so that we can use snapshots.
+redis:
+  persistence:
+    storageClass: "standard-rwo"
+
+cloudsql:
+  enabled: true
+  instanceConnectionName: "roundtable-dev-abe2:us-central1:roundtable-dev-572a252e"
+  serviceAccount: "gafaelfawr@roundtable-dev-abe2.iam.gserviceaccount.com"
+
+config:
+  slackAlerts: false
+
+  github:
+    clientId: "083a615e03ca3dde9392"
+
+  # Support OpenID Connect clients like Chronograf.
+  oidcServer:
+    enabled: true
+
+  knownScopes:
+    "write:git-lfs": >-
+      Can write objects to Git LFS storage bucket
+    "read:checkerboard": >-
+      Can query Checkerboard for user mappings
+
+  groupMapping:
+    "exec:admin":
+      - github:
+          organization: "lsst-sqre"
+          team: "square"
+    "write:git-lfs":
+      - github:
+          organization: "lsst-sqre"
+          team: "square"
+      - github:
+          organization: "lsst-sqre"
+          team: "friends"
+    "read:checkerboard":
+      - github:
+          organization: "lsst-sqre"
+          team: "square"
+      - github:
+          organization: "lsst-sqre"
+          team: "friends"
+
+  initialAdmins:
+    - "afausti"
+    - "athornton"
+    - "fajpunk"
+    - "frossie"
+    - "jonathansick"
+    - "rra"
+    - "stvoutsin"
+
+  errorFooter: |
+    To report problems or ask for help, contact #dm-square on the LSSTC Slack.
+
+ingress:
+  additionalHosts:
+    - "git-lfs-dev.lsst.cloud"
+    - "git-lfs-dev-rw.lsst.cloud"

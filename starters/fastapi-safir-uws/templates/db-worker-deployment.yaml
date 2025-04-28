@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <CHARTNAME>-db-worker
+  labels:
+    {{- include "<CHARTNAME>.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.databaseWorker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "<CHARTNAME>.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: "db-worker"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.databaseWorker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "<CHARTNAME>.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: "db-worker"
+        <CHARTNAME>-redis-client: "true"
+    spec:
+      {{- with .Values.databaseWorker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: false
+      containers:
+        - name: "db-worker"
+          command:
+            - "arq"
+            - "<CHARTNAME>.workers.uws.WorkerSettings"
+          env:
+            - name: "<CHARTENVPREFIX>_ARQ_QUEUE_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "<CHARTNAME>"
+                  key: "redis-password"
+            {{- if .Values.config.slackAlerts }}
+            - name: "<CHARTENVPREFIX>_SLACK_WEBHOOK"
+              valueFrom:
+                secretKeyRef:
+                  name: "<CHARTNAME>"
+                  key: "slack-webhook"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: "<CHARTNAME>"
+          {{- with .Values.databaseWorker.resources }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "all"
+            readOnlyRootFilesystem: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      {{- with .Values.databaseWorker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.databaseWorker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,135 @@
+{{- if .Values.config.slackAlerts -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "gafaelfawr-audit"
+  labels:
+    {{- include "gafaelfawr.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.maintenance.auditSchedule | quote }}
+  concurrencyPolicy: "Forbid"
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: {{ .Values.maintenance.deadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.maintenance.cleanupSeconds }}
+      template:
+        metadata:
+          {{- with .Values.maintenance.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{- include "gafaelfawr.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: "audit"
+            gafaelfawr-redis-client: "true"
+            gafaelfawr-redis-ephemeral-client: "true"
+        spec:
+          {{- if .Values.cloudsql.enabled }}
+          serviceAccountName: "gafaelfawr"
+          {{- else }}
+          automountServiceAccountToken: false
+          {{- end }}
+          containers:
+            - name: "gafaelfawr"
+              command:
+                {{- if .Values.config.ldap.kerberosConfig }}
+                - "k5start"
+                - "-aqUFf"
+                - "/etc/krb5.keytab"
+                - "--"
+                {{- end }}
+                - "gafaelfawr"
+                - "audit"
+              env:
+                {{- include "gafaelfawr.envVars" (dict "Chart" .Chart "Release" .Release "Values" .Values) | nindent 16 }}
+                {{- if .Values.config.metrics.enabled }}
+                - name: "KAFKA_CLIENT_CERT_PATH"
+                  value: "/etc/gafaelfawr-kafka/user.crt"
+                - name: "KAFKA_CLIENT_KEY_PATH"
+                  value: "/etc/gafaelfawr-kafka/user.key"
+                - name: "KAFKA_CLUSTER_CA_PATH"
+                  value: "/etc/gafaelfawr-kafka/ca.crt"
+                {{- end }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+              {{- with .Values.maintenance.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - "all"
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - name: "config"
+                  mountPath: "/etc/gafaelfawr"
+                  readOnly: true
+                {{- if .Values.config.metrics.enabled }}
+                - name: "kafka"
+                  mountPath: "/etc/gafaelfawr-kafka/ca.crt"
+                  readOnly: true
+                  subPath: "ssl.truststore.crt"
+                - name: "kafka"
+                  mountPath: "/etc/gafaelfawr-kafka/user.crt"
+                  readOnly: true
+                  subPath: "ssl.keystore.crt"
+                - name: "kafka"
+                  mountPath: "/etc/gafaelfawr-kafka/user.key"
+                  readOnly: true
+                  subPath: "ssl.keystore.key"
+                {{- end }}
+                {{- if .Values.config.ldap.kerberosConfig }}
+                - name: "keytab"
+                  mountPath: "/etc/krb5.keytab"
+                  readOnly: true
+                  subPath: "ldap-keytab"
+                - name: "kerberos-config"
+                  mountPath: "/etc/krb5.conf"
+                  readOnly: true
+                  subPath: "krb5.conf"
+                - name: "tmp"
+                  mountPath: "/tmp"
+                {{- end }}
+          {{- if .Values.cloudsql.enabled }}
+          initContainers:
+            {{- include "gafaelfawr.cloudsqlSidecar" . | nindent 12 }}
+          {{- end }}
+          restartPolicy: "Never"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumes:
+            - name: "config"
+              configMap:
+                name: "gafaelfawr"
+            {{- if .Values.config.metrics.enabled }}
+            - name: "kafka"
+              secret:
+                secretName: "gafaelfawr-kafka"
+            {{- end }}
+            {{- if .Values.config.ldap.kerberosConfig }}
+            - name: "keytab"
+              secret:
+                secretName: "gafaelfawr-keytab"
+            - name: "kerberos-config"
+              configMap:
+                name: "gafaelfawr-kerberos"
+            - name: "tmp"
+              emptyDir: {}
+            {{- end }}
+          {{- with .Values.maintenance.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.maintenance.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.maintenance.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

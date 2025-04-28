@@ -1,0 +1,81 @@
+suite: Github CI App Integration Enabled
+set:
+  config:
+    githubCiApp:
+      acceptedGithubOrgs:
+        - "org1"
+        - "org2"
+      users:
+        - "bot-mobu-ci-user-1"
+        - "bot-mobu-ci-user-2"
+      scopes:
+        - "exec:notebook"
+        - "read:tap"
+  global:
+    host: "example.com"
+tests:
+  - it: "Should create an anonymous ingress"
+    template: "ingress-github-ci.yaml"
+    asserts:
+      - containsDocument:
+          kind: "GafaelfawrIngress"
+          apiVersion: gafaelfawr.lsst.io/v1alpha1
+      - equal:
+          path: "config.scopes.anonymous"
+          value: true
+
+  - it: "Should inject secrets into the StatefulSet env"
+    template: "stateful-set.yaml"
+    asserts:
+      - contains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_CI_APP_ID"
+      - contains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_CI_APP_PRIVATE_KEY"
+      - contains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_CI_APP_WEBHOOK_SECRET"
+  - it: "Should create a ConfigMap"
+    template: "configmap.yaml"
+    asserts:
+      - containsDocument:
+          kind: "ConfigMap"
+          apiVersion: v1
+      - equal:
+          path: "data['config.yaml']"
+          value: |
+            autostart: []
+            availableServices: []
+            gafaelfawrTimeout: null
+            githubCiApp:
+              acceptedGithubOrgs:
+              - org1
+              - org2
+              scopes:
+              - exec:notebook
+              - read:tap
+              users:
+              - bot-mobu-ci-user-1
+              - bot-mobu-ci-user-2
+            githubRefreshApp: null
+            logLevel: INFO
+            metrics:
+              application: mobu
+              enabled: false
+              events:
+                topicPrefix: lsst.square.metrics.events
+              schemaManager:
+                registryUrl: http://sasquatch-schema-registry.sasquatch.svc.cluster.local:8081
+                suffix: ""
+            pathPrefix: /mobu
+            profile: production
+            sentryEnvironment: null
+            sentryTracesSampleConfig: 0
+            slackAlerts: true

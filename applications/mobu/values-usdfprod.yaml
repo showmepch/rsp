@@ -1,0 +1,32 @@
+config:
+  sentryTracesSampleConfig: errors
+  autostart:
+    - name: "firefighter"
+      count: 1
+      users:
+        - username: "bot-mobu04"
+          uidnumber: 45695
+          gidnumber: 1126
+      scopes:
+        - "exec:notebook"
+        - "exec:portal"
+        - "read:image"
+        - "read:tap"
+      business:
+        type: "NotebookRunnerCounting"
+        options:
+          repo_url: "https://github.com/lsst-sqre/system-test.git"
+          repo_ref: "prod"
+        restart: true
+    - name: "tap"
+      count: 1
+      users:
+        - username: "bot-mobu05"
+          uidnumber: 45696
+          gidnumber: 1126
+      scopes: ["read:tap"]
+      business:
+        type: "TAPQuerySetRunner"
+        options:
+          query_set: "dp0.2"
+        restart: true

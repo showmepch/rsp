@@ -1,0 +1,43 @@
+name: "idfdev"
+fqdn: "data-dev.lsst.cloud"
+appOfAppsName: "science-platform"
+butlerServerRepositories:
+  dp02: "https://data-dev.lsst.cloud/api/butler/repo/dp02/butler.yaml"
+  dp1: "https://data-dev.lsst.cloud/api/butler/repo/dp1/butler.yaml"
+gcp:
+  projectId: "science-platform-dev-7696"
+  region: "us-central1"
+  clusterName: "science-platform-dev"
+onepassword:
+  connectUrl: "https://roundtable-dev.lsst.cloud/1password"
+  vaultTitle: "RSP data-dev.lsst.cloud"
+vaultPathPrefix: "secret/phalanx/idfdev"
+
+applications:
+  butler: true
+  datalinker: true
+  filestore-backup: true
+  flink: true
+  ghostwriter: true
+  hips: true
+  jira-data-proxy: true
+  mobu: true
+  noteburst: true
+  nublado: true
+  portal: true
+  qserv-kafka: true
+  sasquatch: true
+  semaphore: true
+  sia: true
+  ssotap: true
+  squareone: true
+  sqlproxy-cross-project: true
+  strimzi: true
+  strimzi-access-operator: true
+  tap: true
+  telegraf: true
+  telegraf-ds: true
+  times-square: true
+  vault-secrets-operator: true
+  vo-cutouts: true
+  wobbly: true

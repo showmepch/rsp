@@ -1,0 +1,42 @@
+name: "idfint"
+fqdn: "data-int.lsst.cloud"
+appOfAppsName: "science-platform"
+butlerServerRepositories:
+  dp02: "https://data-int.lsst.cloud/api/butler/repo/dp02/butler.yaml"
+  dp1: "https://data-int.lsst.cloud/api/butler/repo/dp1/butler.yaml"
+gcp:
+  projectId: "science-platform-int-dc5d"
+  region: "us-central1"
+  clusterName: "science-platform-int"
+onepassword:
+  connectUrl: "https://roundtable.lsst.cloud/1password"
+  vaultTitle: "RSP data-int.lsst.cloud"
+vaultPathPrefix: "secret/phalanx/idfint"
+
+applications:
+  butler: true
+  datalinker: true
+  filestore-backup: true
+  ghostwriter: true
+  hips: true
+  mobu: true
+  noteburst: true
+  nublado: true
+  portal: true
+  qserv-kafka: true
+  rubin-rag: true
+  sasquatch: true
+  sia: true
+  ssotap: true
+  sasquatch-backpack: true
+  semaphore: true
+  sqlproxy-cross-project: true
+  squareone: true
+  strimzi: true
+  strimzi-access-operator: true
+  tap: true
+  telegraf: true
+  telegraf-ds: true
+  times-square: true
+  vo-cutouts: true
+  wobbly: true

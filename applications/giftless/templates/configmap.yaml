@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "giftless.fullname" . }}-ro
+  labels:
+    {{- include "giftless.labels" . | nindent 4 }}
+data:
+  giftless.conf.yaml: |-
+    AUTH_PROVIDERS:
+      - "giftless.auth.allow_anon:read_only"
+    LEGACY_ENDPOINTS: true
+    TRANSFER_ADAPTERS:
+      basic:
+        factory: "giftless.transfer.basic_external:factory"
+        options:
+          storage_class: "giftless.storage.google_cloud:GoogleCloudStorage"
+          storage_options:
+            project_name: {{ .Values.config.storageProjectName | quote }}
+            bucket_name: {{ .Values.config.bucketName | quote }}
+            serviceaccount_email: {{ .Values.config.serviceAccountReadonly }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "giftless.fullname" . }}-rw
+  labels:
+    {{- include "giftless-rw.labels" . | nindent 4 }}
+data:
+  giftless.conf.yaml: |-
+    AUTH_PROVIDERS:
+      - "giftless.auth.allow_anon:read_write"
+    TRANSFER_ADAPTERS:
+      basic:
+        factory: "giftless.transfer.basic_external:factory"
+        options:
+          storage_class: "giftless.storage.google_cloud:GoogleCloudStorage"
+          storage_options:
+            project_name: {{ .Values.config.storageProjectName | quote }}
+            bucket_name: {{ .Values.config.bucketName | quote }}
+            serviceaccount_email: {{ .Values.config.serviceAccountReadwrite }}
+            noverify_upload: true
+

@@ -1,0 +1,29 @@
+fqdn: k8s.slac.stanford.edu
+name: usdfdev-prompt-processing
+vaultUrl: "https://vault.slac.stanford.edu"
+vaultPathPrefix: secret/rubin/usdf-prompt-processing-dev
+
+applications:
+  cert-manager: false
+  gafaelfawr: false
+  ingress-nginx: false
+  keda: true
+  next-visit-fan-out: true
+  next-visit-fan-out-keda: false
+  prompt-kafka: true
+  prompt-keda-hsc: true
+  prompt-keda-latiss: true
+  prompt-keda-lsstcam: true
+  prompt-keda-lsstcamimsim: true
+  prompt-keda-lsstcomcam: true
+  prompt-keda-lsstcomcamsim: true
+  prompt-proto-service-hsc: false
+  prompt-proto-service-hsc-gpu: false
+  prompt-proto-service-latiss: false
+  prompt-proto-service-lsstcam: false
+  prompt-proto-service-lsstcamimsim: false
+  prompt-proto-service-lsstcomcam: false
+  prompt-proto-service-lsstcomcamsim: false
+  prompt-redis: true
+  strimzi: true
+  vault-secrets-operator: false

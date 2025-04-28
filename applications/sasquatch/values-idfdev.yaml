@@ -1,0 +1,189 @@
+strimzi-kafka:
+  kafka:
+    externalListener:
+      tls:
+        enabled: true
+      bootstrap:
+        loadBalancerIP: "35.222.7.174"
+        host: sasquatch-dev-kafka-bootstrap.lsst.cloud
+      brokers:
+        - broker: 0
+          loadBalancerIP: "35.193.196.189"
+          host: sasquatch-dev-kafka-0.lsst.cloud
+        - broker: 1
+          loadBalancerIP: "35.232.19.196"
+          host: sasquatch-dev-kafka-1.lsst.cloud
+        - broker: 2
+          loadBalancerIP: "34.172.163.125"
+          host: sasquatch-dev-kafka-2.lsst.cloud
+    resources:
+      requests:
+        memory: 16Gi
+        cpu: 2
+      limits:
+        memory: 16Gi
+        cpu: 2
+  users:
+    replicator:
+      enabled: true
+    telegraf:
+      enabled: true
+  kraft:
+    enabled: true
+  kafkaController:
+    enabled: true
+    resources:
+      requests:
+        memory: 16Gi
+        cpu: "2"
+      limits:
+        memory: 16Gi
+        cpu: "2"
+
+  registry:
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /$2
+      hostname: data-dev.lsst.cloud
+      path: /schema-registry(/|$)(.*)
+
+influxdb:
+  ingress:
+    enabled: false
+    hostname: data-dev.lsst.cloud
+  resources:
+    requests:
+      memory: 16Gi
+      cpu: 2
+    limits:
+      memory: 16Gi
+      cpu: 2
+
+customInfluxDBIngress:
+  enabled: true
+  hostname: data-dev.lsst.cloud
+
+influxdb-enterprise:
+  enabled: true
+  license:
+    secret:
+      name: sasquatch
+      key: influxdb-enterprise-license
+  meta:
+    ingress:
+      enabled: true
+      hostname: data-dev.lsst.cloud
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 16Gi
+    sharedSecret:
+      secret:
+        name: sasquatch
+        key: influxdb-enterprise-shared-secret
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1
+      limits:
+        memory: 4Gi
+        cpu: 2
+  data:
+    replicas: 2
+    config:
+      antiEntropy:
+        enabled: true
+    ingress:
+      enabled: true
+      hostname: data-dev.lsst.cloud
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 1Ti
+    resources:
+      requests:
+        memory: 8Gi
+        cpu: 2
+      limits:
+        memory: 16Gi
+        cpu: 4
+
+telegraf:
+  enabled: true
+  kafkaConsumers:
+    test:
+      enabled: true
+      database: "telegraf-kafka-consumer-v1"
+      replicaCount: 1
+      topicRegexps: |
+        [ "lsst.Test.*" ]
+
+kafdrop:
+  cmdArgs: "--message.format=AVRO --message.keyFormat=DEFAULT --topic.deleteEnabled=true --topic.createEnabled=true"
+  ingress:
+    enabled: true
+    hostname: data-dev.lsst.cloud
+
+rest-proxy:
+  enabled: true
+  ingress:
+    enabled: true
+    hostname: data-dev.lsst.cloud
+  kafka:
+    topicPrefixes:
+      - test
+      - lsst.dm
+      - lsst.Test
+      - lsst.tap
+
+chronograf:
+  ingress:
+    enabled: true
+    hostname: data-dev.lsst.cloud
+  env:
+    GENERIC_NAME: "OIDC"
+    GENERIC_AUTH_URL: https://data-dev.lsst.cloud/auth/openid/login
+    GENERIC_TOKEN_URL: https://data-dev.lsst.cloud/auth/openid/token
+    USE_ID_TOKEN: 1
+    JWKS_URL: https://data-dev.lsst.cloud/.well-known/jwks.json
+    GENERIC_API_URL: https://data-dev.lsst.cloud/auth/openid/userinfo
+    GENERIC_SCOPES: openid
+    GENERIC_API_KEY: sub
+    PUBLIC_URL: https://data-dev.lsst.cloud/
+    STATUS_FEED_URL: https://raw.githubusercontent.com/lsst-sqre/rsp_broadcast/main/jsonfeeds/idfdev.json
+
+app-metrics:
+  enabled: true
+  apps:
+    - gafaelfawr
+    - mobu
+    - noteburst
+    - nublado
+    - sia
+    - wobbly
+
+backup:
+  enabled: true
+  persistence:
+    size: 500Gi
+    storageClass: standard
+  backupItems:
+    - name: "chronograf"
+      enabled: true
+      retentionDays: 3
+    - name: "kapacitor"
+      enabled: true
+      retentionDays: 3
+    - name: "influxdb-enterprise-incremental"
+      enabled: true
+    - name: "influxdb-oss-full"
+      enabled: true
+      retentionDays: 3
+  restoreItems:
+    - name: "influxdb-oss-full"
+      enabled: true
+      backupTimestamp: "20250113T030120Z"
+
+tap:
+  enabled: true

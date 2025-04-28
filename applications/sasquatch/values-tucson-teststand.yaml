@@ -1,0 +1,245 @@
+strimzi-kafka:
+  cluster:
+    monitorLabel:
+      lsst.io/monitor: "true"
+  kafka:
+    storage:
+      storageClassName: rook-ceph-block
+    externalListener:
+      tls:
+        enabled: true
+      bootstrap:
+        loadBalancerIP: "140.252.146.59"
+        host: sasquatch-tts-kafka-bootstrap.lsst.codes
+      brokers:
+        - broker: 0
+          loadBalancerIP: "140.252.146.46"
+          host: sasquatch-tts-kafka-0.lsst.codes
+        - broker: 1
+          loadBalancerIP: "140.252.146.58"
+          host: sasquatch-tts-kafka-1.lsst.codes
+        - broker: 2
+          loadBalancerIP: "140.252.146.47"
+          host: sasquatch-tts-kafka-2.lsst.codes
+    resources:
+      requests:
+        memory: 8Gi
+        cpu: 1
+      limits:
+        memory: 8Gi
+        cpu: 1
+    metricsConfig:
+      enabled: true
+  kafkaExporter:
+    enabled: true
+    enableSaramaLogging: true
+    resources:
+      requests:
+        cpu: 200m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  users:
+    telegraf:
+      enabled: true
+  registry:
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /$2
+      hostname: tucson-teststand.lsst.codes
+      path: /schema-registry(/|$)(.*)
+  kraft:
+    enabled: true
+  kafkaController:
+    enabled: true
+    resources:
+      requests:
+        memory: 16Gi
+        cpu: "2"
+      limits:
+        memory: 16Gi
+        cpu: "2"
+
+influxdb:
+  persistence:
+    storageClass: rook-ceph-block
+  ingress:
+    enabled: false
+    hostname: tucson-teststand.lsst.codes
+
+customInfluxDBIngress:
+  enabled: true
+  hostname: tucson-teststand.lsst.codes
+
+telegraf:
+  enabled: true
+  kafkaConsumers:
+    auxtel:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.ATAOS", "lsst.sal.ATBuilding", "lsst.sal.ATDome", "lsst.sal.ATDomeTrajectory", "lsst.sal.ATHexapod", "lsst.sal.ATPneumatics", "lsst.sal.ATPtg", "lsst.sal.ATMCS" ]
+      debug: true
+    maintel:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTAOS", "lsst.sal.MTDome", "lsst.sal.MTDomeTrajectory", "lsst.sal.MTPtg" ]
+      debug: true
+    mtmount:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTMount" ]
+      debug: true
+    envsys:
+      enabled: true
+      database: "efd"
+      metric_batch_size: 100
+      flush_interval: 20s
+      topicRegexps: |
+        [ "lsst.sal.DIMM", "lsst.sal.DREAM", "lsst.sal.DSM", "lsst.sal.EAS", "lsst.sal.EPM", "lsst.sal.ESS", "lsst.sal.HVAC", "lsst.sal.WeatherForecast" ]
+      debug: true
+    latiss:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.ATCamera", "lsst.sal.ATHeaderService", "lsst.sal.ATOODS", "lsst.sal.ATSpectrograph" ]
+      debug: true
+    m1m3:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTM1M3" ]
+      debug: true
+    m2:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTHexapod", "lsst.sal.MTM2", "lsst.sal.MTRotator" ]
+      debug: true
+    obssys:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.Scheduler", "lsst.sal.Script", "lsst.sal.ScriptQueue", "lsst.sal.Watcher" ]
+      debug: true
+    ocps:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.OCPS" ]
+      debug: true
+    calsys:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.CBP", "lsst.sal.Electrometer", "lsst.sal.FiberSpectrograph", "lsst.sal.LEDProjector", "lsst.sal.LinearStage", "lsst.sal.MTReflector", "lsst.sal.TunableLaser" ]
+      debug: true
+    comcam:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.CCCamera", "lsst.sal.CCHeaderService", "lsst.sal.CCOODS" ]
+      debug: true
+    test:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.Test" ]
+      debug: true
+    mtaircompressor:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTAirCompressor" ]
+      debug: true
+    lasertracker:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.LaserTracker" ]
+      debug: true
+    genericcamera:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.GCHeaderService", "lsst.sal.GenericCamera" ]
+      debug: true
+    obsenv:
+      enabled: true
+      database: "lsst.obsenv"
+      timestamp_format: "unix_ms"
+      timestamp_field: "timestamp"
+      topicRegexps: |
+        [ "lsst.obsenv" ]
+      debug: true
+  resources:
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+
+kafdrop:
+  ingress:
+    enabled: true
+    hostname: tucson-teststand.lsst.codes
+
+rest-proxy:
+  enabled: true
+  ingress:
+    enabled: true
+    hostname: tucson-teststand.lsst.codes
+  configurationOverrides:
+    "access.control.allow.origin": https://tucson-teststand.lsst.codes/love
+  kafka:
+    topicPrefixes:
+      - lsst.obsenv
+
+chronograf:
+  persistence:
+    storageClass: rook-ceph-block
+  ingress:
+    enabled: true
+    hostname: tucson-teststand.lsst.codes
+  env:
+    GENERIC_NAME: "OIDC"
+    GENERIC_AUTH_URL: https://tucson-teststand.lsst.codes/auth/openid/login
+    GENERIC_TOKEN_URL: https://tucson-teststand.lsst.codes/auth/openid/token
+    USE_ID_TOKEN: 1
+    JWKS_URL: https://tucson-teststand.lsst.codes/.well-known/jwks.json
+    GENERIC_API_URL: https://tucson-teststand.lsst.codes/auth/openid/userinfo
+    GENERIC_SCOPES: openid
+    GENERIC_API_KEY: sub
+    PUBLIC_URL: https://tucson-teststand.lsst.codes
+    STATUS_FEED_URL: https://raw.githubusercontent.com/lsst-sqre/rsp_broadcast/main/jsonfeeds/tucson-teststand.json
+
+kapacitor:
+  persistence:
+    storageClass: rook-ceph-block
+
+backup:
+  enabled: true
+  persistence:
+    size: 100Gi
+    storageClass: rook-ceph-block
+  backupItems:
+    - name: chronograf
+      enabled: true
+      retentionDays: 7
+    - name: kapacitor
+      enabled: true
+      retentionDays: 7
+
+obsenv:
+  enabled: true
+
+control-system:
+  enabled: true
+
+consdb:
+  enabled: true

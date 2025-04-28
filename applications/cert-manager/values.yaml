@@ -1,0 +1,66 @@
+config:
+  # -- Whether to create a Let's Encrypt DNS-based cluster issuer
+  createIssuer: true
+
+  # -- Contact email address registered with Let's Encrypt
+  # @default -- sqre-admin
+  email: "sqre-admin@lists.lsst.org"
+
+  # Currently, DNS with Route 53 is the only supported solver mechanism
+  route53:
+    # -- AWS access key ID for Route 53 (must match `aws-secret-access-key` in
+    # Vault secret referenced by `config.vaultSecretPath`)
+    # @default -- None, must be set if `createIssuer` is true
+    awsAccessKeyId: ""
+
+    # -- Route 53 hosted zone in which to create challenge records
+    # @default -- None, must be set if `createIssuer` is true
+    hostedZone: ""
+
+cert-manager:
+  # -- Whether to install CRDs
+  installCRDs: true
+
+  # -- Additional arguments to the main cert-manager pod
+  extraArgs:
+    - "--logging-format=json"
+    - "--dns01-recursive-nameservers-only"
+    - "--dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53"
+
+  cainjector:
+    # -- Additional arguments to the CA injector
+    extraArgs:
+      - "--logging-format=json"
+
+  # -- Resource requests and limits for the cert-manager controller
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "256Mi"
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+
+  webhook:
+    # -- Additional arguments to the webhook pod
+    extraArgs:
+      - "--logging-format=json"
+
+    # -- Resource requests and limits for the webhook pod
+    # @default -- See `values.yaml`
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "256Mi"
+      requests:
+        cpu: "10m"
+        memory: "32Mi"
+
+
+# The following will be set by parameters injected by Argo CD and should not
+# be set in the individual environment values files.
+global:
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: ""

@@ -1,0 +1,17 @@
+server:
+  readonly:
+    replicas: 5
+    processes: 6
+    timeout: 1800
+  readwrite:
+    processes: 4
+    timeout: 1800
+ingress:
+  hostname:
+    readonly: "git-lfs.lsst.cloud"
+    readwrite: "git-lfs-rw.lsst.cloud"
+config:
+  storageProjectName: "data-curation-prod-fbdb"
+  bucketName: "rubin-us-central1-git-lfs"
+  serviceAccountReadonly: "git-lfs-ro@roundtable-prod-f6fd.iam.gserviceaccount.com"
+  serviceAccountReadwrite: "git-lfs-rw@roundtable-prod-f6fd.iam.gserviceaccount.com"

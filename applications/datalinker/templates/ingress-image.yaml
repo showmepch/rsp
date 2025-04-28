@@ -1,0 +1,36 @@
+apiVersion: gafaelfawr.lsst.io/v1alpha1
+kind: GafaelfawrIngress
+metadata:
+  name: "datalinker-image"
+  labels:
+    {{- include "datalinker.labels" . | nindent 4 }}
+config:
+  baseUrl: {{ .Values.global.baseUrl | quote }}
+  scopes:
+    all:
+      - "read:image"
+  service: "datalinker"
+  delegate:
+    internal:
+      service: "datalinker"
+      scopes:
+        - "read:image"
+template:
+  metadata:
+    name: "datalinker-image"
+    {{- with .Values.ingress.annotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  spec:
+    rules:
+      - host: {{ required "global.host must be set" .Values.global.host | quote }}
+        http:
+          paths:
+            - path: "{{ .Values.config.pathPrefix }}/links"
+              pathType: "Exact"
+              backend:
+                service:
+                  name: "datalinker"
+                  port:
+                    number: 8080

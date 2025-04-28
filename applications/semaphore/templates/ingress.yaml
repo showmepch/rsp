@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "semaphore"
+  labels:
+    {{- include "semaphore.labels" . | nindent 4 }}
+spec:
+  ingressClassName: "nginx"
+  rules:
+    - host: {{ required "global.host must be set" .Values.global.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.path | quote }}
+            pathType: "Prefix"
+            backend:
+              service:
+                name: "semaphore"
+                port:
+                  number: 80

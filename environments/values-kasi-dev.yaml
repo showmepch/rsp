@@ -1,0 +1,14 @@
+fqdn: "rsp.kasi.re.kr"
+name: "kasi-dev"
+appOfAppsName: "science-platform"
+repoUrl: local
+vaultUrl: "http://10.0.1.233:8200"
+vaultPathPrefix: "secret/phalanx/kasi"
+applications:
+  gafaelfawr: true
+  nublado: false
+  portal: true
+  postgres: true
+  squareone: true
+  strimzi: true
+  strimzi-access-operator: true

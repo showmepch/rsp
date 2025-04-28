@@ -1,0 +1,136 @@
+# Default values for mobu.
+
+# -- Number of mobu instances to start. Starting more than one should only be
+# used temporarily in specific circumstances. See [the Mobu
+# documentation](https://mobu.lsst.io/user-guide/multiple-replicas.html)
+replicaCount: 1
+
+image:
+  # -- mobu image to use
+  repository: "ghcr.io/lsst-sqre/mobu"
+
+  # -- Pull policy for the mobu image
+  pullPolicy: "IfNotPresent"
+
+  # -- Tag of mobu image to use
+  # @default -- The appVersion of the chart
+  tag: ""
+
+ingress:
+  # -- Additional annotations to add to the ingress
+  annotations: {}
+
+config:
+  # -- Which applications (tap, butler, etc.) are available in this
+  # environment. Notebooks can specify a `mobu.required_services` list in their
+  # metadata, and mobu will only run them if all services in that list are in
+  # this `availableServices` list. See
+  # [the Mobu documentation](https://mobu.lsst.io/user_guide/in_repo_config.html#service-specific-notebooks)
+  availableServices: []
+
+  # -- Autostart specification. Must be a list of mobu flock specifications.
+  # Each flock listed will be automatically started when mobu is started.
+  autostart: []
+
+  # -- Timeout for Gafaelfawr token creation requests during flock startup
+  # @default -- Use the default timeout for the Safir connection pool
+  gafaelfawrTimeout: null
+
+  # -- Configuration for the GitHub refresh app integration.
+  # See [the Mobu documentation](https://mobu.lsst.io/operations/github_refresh_app.html#add-phalanx-configuration)
+  # @default -- disabled.
+  githubRefreshApp: null
+
+  # -- Configuration for the GitHub CI app integration.
+  # See [the Mobu documentation](https://mobu.lsst.io/operations/github_ci_app.html#add-phalanx-configuration)
+  # @default -- disabled.
+  githubCiApp: null
+
+  # -- Log level. Set to 'DEBUG' to include the output from all flocks in the
+  # main mobu log.
+  logLevel: INFO
+
+  # -- Prefix for mobu's API routes.
+  pathPrefix: "/mobu"
+
+  # -- One of 'production' or 'development'. 'production' configures structured
+  # JSON logging, and 'development' configures unstructured human readable
+  # logging.
+  profile: production
+
+  # -- The environment to report to Sentry
+  sentryEnvironment: null
+
+  # -- Sentry tracing config: a float to specify a percentage, or "errors" to
+  # send all transactions with errors.
+  sentryTracesSampleConfig: 0.0
+
+  # -- Whether to send alerts and status to Slack.
+  slackAlerts: true
+
+  metrics:
+    # -- Whether to enable sending metrics
+    enabled: false
+
+    # -- Name under which to log metrics. Generally there is no reason to
+    # change this.
+    application: "mobu"
+
+    events:
+      # -- Topic prefix for events. It may sometimes be useful to change this
+      # in development environments.
+      topicPrefix: "lsst.square.metrics.events"
+
+    schemaManager:
+      # -- URL of the Confluent-compatible schema registry server
+      # @default -- Sasquatch in the local cluster
+      registryUrl: "http://sasquatch-schema-registry.sasquatch.svc.cluster.local:8081"
+
+      # -- Suffix to add to all registered subjects. This is sometimes useful
+      # for experimentation during development.
+      suffix: ""
+
+# -- Resource limits and requests for the mobu frontend pod
+# @default -- See `values.yaml`
+resources:
+  limits:
+    cpu: "1"
+    # This is specified in Mi instead of Gi because ArgoCD will always show
+    # OutOfSync because of a bug in value normalization for certain
+    # combinations of attributes in certain resources:
+    # https://github.com/argoproj/argo-cd/issues/16400
+    memory: "3584Mi"
+  requests:
+    cpu: "50m"
+    memory: "1Gi"
+
+# -- Affinity rules for the mobu frontend pod
+affinity: {}
+
+# -- Node selector rules for the mobu frontend pod
+nodeSelector: {}
+
+# -- Annotations for the mobu frontend pod
+podAnnotations: {}
+
+# -- Number of seconds for Kubernetes to send SIGKILL after sending SIGTERM
+# @default -- Use the Kubernetes default
+terminationGracePeriodSeconds: null
+
+# -- Tolerations for the mobu frontend pod
+tolerations: []
+
+# The following will be set by parameters injected by Argo CD and should not
+# be set in the individual environment values files.
+global:
+  # -- Base URL for the environment
+  # @default -- Set by Argo CD
+  baseUrl: ""
+
+  # -- Host name for ingress
+  # @default -- Set by Argo CD
+  host: ""
+
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: ""

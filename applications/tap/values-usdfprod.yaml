@@ -1,0 +1,14 @@
+cadc-tap:
+  tapSchema:
+    image:
+      repository: "lsstsqre/tap-schema-usdf-prod-tap"
+
+  config:
+    qserv:
+      host: "sdfqserv001.sdf.slac.stanford.edu:4040"
+      jdbcParams: "?enabledTLSProtocols=TLSv1.3"
+      passwordEnabled: true
+
+    gcsBucket: "rubin:rubin-qserv"
+    gcsBucketUrl: "https://s3dfrgw.slac.stanford.edu"
+    gcsBucketType: "S3"

@@ -1,0 +1,150 @@
+# Default values for the Portal Aspect.
+
+# -- Number of pods to start
+replicaCount: 1
+
+# -- Override the base name for resources
+nameOverride: ""
+
+# -- Override the full name for resources (includes the release name)
+fullnameOverride: ""
+
+image:
+  # -- Portal image to use
+  repository: "ipac/suit"
+
+  # -- Pull policy for the Portal image
+  pullPolicy: "IfNotPresent"
+
+  # -- Tag of Portal image to use
+  # @default -- The appVersion of the chart
+  tag: ""
+
+ingress:
+  # -- Additional annotations to add to the ingress
+  annotations: {}
+
+# -- Resource limits and requests.
+# @default -- See `values.yaml`
+# The Portal will use (by default) 93% of container RAM.  This is a
+# smallish Portal; tweak it as you need to in instance definitions in
+# Phalanx.
+resources:
+  limits:
+    cpu: "2"
+    memory: "6Gi"
+  requests:
+    cpu: "5m"
+    memory: "256Mi"
+
+# -- Annotations for the Portal pod
+podAnnotations: {}
+
+# -- Node selector rules for the Portal pod
+nodeSelector: {}
+
+# -- Tolerations for the Portal pod
+tolerations: []
+
+# -- Affinity rules for the Portal pod
+affinity: {}
+
+# -- Security context for the Portal pod
+# @default -- See `values.yaml`
+securityContext:
+  runAsUser: 91
+  runAsGroup: 91
+  fsGroup: 91
+
+config:
+  # -- Set to `TRUE` to enable service debugging
+  debug: "FALSE"
+
+  # -- How long results should be retained before being deleted
+  cleanupInterval: "36h"
+
+  # -- URL for default HiPS service
+  # @default -- `/api/hips/images/color_gri` in the local Science Platform
+  hipsUrl: ""
+
+  # -- Search path for FITS files
+  visualizeFitsSearchPath: "/datasets"
+
+  # -- Endpoint under `/api/` for the DP0.3 SSO TAP service on the instance, if present
+  ssotap: ""
+
+  # -- Endpoint under `/api/` for the live TAP service on the instance, if present
+  livetap: ""
+
+  # @default -- See documentation at `https://phalanx.lsst.io/applications/portal/volumes.html`
+  volumes:
+    # -- work area accessible read-write to all Portal pods
+    # @default -- use an `emptyDir` (will not be shared; see documentation)
+    sharedWorkarea:
+      hostPath: {}
+      nfs: {}
+      pvc: {}
+    # -- private work area accessible read-write to a single Portal pod
+    # @default -- use an `emptyDir`
+    privateWorkarea:
+      hostPath: {}
+      nfs: {}
+      pvc: {}
+    # -- configuration directory accessible read-only to all Portal pods
+    # @default -- use an `emptyDir`
+    config:
+      hostPath: {}
+      nfs: {}
+      pvc: {}
+
+redis:
+  config:
+    # -- Name of secret containing Redis password (may require changing if
+    # fullnameOverride is set)
+    secretName: "portal-secret"
+
+    # -- Key inside secret from which to get the Redis password (do not
+    # change)
+    secretKey: "ADMIN_PASSWORD"
+
+  persistence:
+    # -- Whether to persist Redis storage. Setting this to false will use
+    # `emptyDir` and reset all data on every restart.
+    enabled: false
+
+  # -- Resource limits and requests for the Redis pod
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "40Mi"
+    requests:
+      cpu: "50m"
+      memory: "20Mi"
+
+  # -- Pod annotations for the Redis pod
+  podAnnotations: {}
+
+  # -- Node selection rules for the Redis pod
+  nodeSelector: {}
+
+  # -- Tolerations for the Redis pod
+  tolerations: []
+
+  # -- Affinity rules for the Redis pod
+  affinity: {}
+
+# The following will be set by parameters injected by Argo CD and should not
+# be set in the individual environment values files.
+global:
+  # -- Base URL for the environment
+  # @default -- Set by Argo CD
+  baseUrl: ""
+
+  # -- Host name for ingress
+  # @default -- Set by Argo CD
+  host: ""
+
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: ""

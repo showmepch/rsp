@@ -1,0 +1,41 @@
+redis:
+  persistence:
+    enabled: false
+    storageClass: "local-path"
+
+config:
+  internalDatabase: true
+  updateSchema: true
+
+  github:
+    clientId: "Ov23liCjN6BS6hAPfgAr"
+
+  # Allow access by GitHub team.
+  groupMapping:
+    "exec:admin":
+      - github:
+          organization: "kasi-rubin-dev"
+          team: "rsp"
+    "exec:internal-tools":
+      - github:
+          organization: "kasi-rubin-dev"
+          team: "rsp"
+    "exec:notebook":
+      - github:
+          organization: "kasi-rubin-dev"
+          team: "rsp"
+    "exec:portal":
+      - github:
+          organization: "kasi-rubin-dev"
+          team: "rsp"
+    "read:image":
+      - github:
+          organization: "kasi-rubin-dev"
+          team: "rsp"
+    "read:tap":
+      - github:
+          organization: "kasi-rubin-dev"
+          team: "rsp"
+
+  initialAdmins:
+    - "changhree"

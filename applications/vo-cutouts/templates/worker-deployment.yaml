@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "vo-cutouts-worker"
+  labels:
+    {{- include "vo-cutouts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.databaseWorker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vo-cutouts.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: "worker"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.databaseWorker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "vo-cutouts.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: "worker"
+        vo-cutouts-redis-client: "true"
+    spec:
+      {{- with .Values.cutoutWorker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: "vo-cutouts"
+      containers:
+        - name: "worker"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "all"
+            readOnlyRootFilesystem: true
+          image: "{{ .Values.cutoutWorker.image.repository }}:{{ .Values.cutoutWorker.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.cutoutWorker.image.pullPolicy | quote }}
+          env:
+            # Password for Redis for the job queue.
+            - name: "CUTOUT_ARQ_QUEUE_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "vo-cutouts"
+                  key: "redis-password"
+
+            # Temporary directory into which to stage cutouts before uploading.
+            - name: "CUTOUT_TMPDIR"
+              value: "/tmp/cutouts"
+
+            # Used by Butler to retrieve its configuration.
+            - name: "DAF_BUTLER_REPOSITORIES"
+              value: {{ .Values.global.butlerServerRepositories | b64dec | quote }}
+
+            # lsst-resources writes temp files into the current working
+            # directory unless you explicitly specify one.
+            - name: "TMPDIR"
+              value: "/tmp"
+          envFrom:
+            - configMapRef:
+                name: "vo-cutouts"
+          {{- with .Values.cutoutWorker.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: "tmp"
+              mountPath: "/tmp"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      terminationGracePeriodSeconds: {{ .Values.config.gracePeriod }}
+      volumes:
+        - name: "tmp"
+          emptyDir: {}
+      {{- with .Values.cutoutWorker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cutoutWorker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

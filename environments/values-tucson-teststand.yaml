@@ -1,0 +1,34 @@
+name: "tucson-teststand"
+fqdn: "tucson-teststand.lsst.codes"
+appOfAppsName: "science-platform"
+onepassword:
+  connectUrl: "https://roundtable-dev.lsst.cloud/1password"
+  vaultTitle: "RSP tucson-teststand.lsst.codes"
+vaultPathPrefix: "secret/phalanx/tucson-teststand"
+namespaceLabels:
+  sasquatch:
+    lsst.io/discover: 'true'
+
+applications:
+  argo-workflows: true
+  consdb: true
+  exposurelog: true
+  mobu: true
+  narrativelog: true
+  nightreport: true
+  nublado: true
+  obsenv-management: true
+  portal: true
+  rapid-analysis: true
+  rubintv: true
+  sasquatch: true
+  squareone: true
+  strimzi: true
+  uws: true
+  telegraf: true
+  telegraf-ds: true
+
+controlSystem:
+  imageTag: "k0001"
+  siteTag: "tucson"
+  s3EndpointUrl: "https://s3.tu.lsst.org"

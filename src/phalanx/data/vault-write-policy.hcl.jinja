@@ -1,0 +1,21 @@
+path "{{ mount_point }}/data/{{ path }}" {
+  capabilities = ["create", "delete", "read", "update"]
+}
+path "{{ mount_point }}/data/{{ path }}/+" {
+  capabilities = ["create", "delete", "read", "update"]
+}
+path "{{ mount_point }}/metadata/{{ path }}" {
+  capabilities = ["delete", "list", "read", "update"]
+}
+path "{{ mount_point }}/metadata/{{ path }}/+" {
+  capabilities = ["delete", "list", "read", "update"]
+}
+path "{{ mount_point }}/delete/{{ path }}/+" {
+  capabilities = ["update"]
+}
+path "{{ mount_point }}/destroy/{{ path }}/+" {
+  capabilities = ["update"]
+}
+path "{{ mount_point }}/undelete/{{ path }}/+" {
+  capabilities = ["update"]
+}

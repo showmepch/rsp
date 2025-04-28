@@ -1,0 +1,15 @@
+name: idfdev
+fqdn: data-dev.lsst.cloud
+appOfAppsName: science-platform
+gcp:
+  projectId: science-platform-dev-7696
+  region: us-central1
+  clusterName: science-platform
+vaultUrl: https://vault.lsst.cloud/
+vaultPathPrefix: secret/phalanx/idfdev
+
+applications:
+  mobu: true
+  nublado: true
+  portal: true
+  postgres: true

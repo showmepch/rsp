@@ -1,0 +1,100 @@
+controller:
+  config:
+    images:
+      source:
+        type: "docker"
+        registry: "ts-dockerhub.lsst.org"
+        repository: "sal-sciplat-lab"
+      numReleases: 0
+      numWeeklies: 3
+      numDailies: 2
+      cycle: 41
+      recommendedTag: "recommended_c0041"
+    lab:
+      env:
+        AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+        AWS_SHARED_CREDENTIALS_FILE: "/opt/lsst/software/jupyterlab/secrets/aws-credentials.ini"
+        DAF_BUTLER_REPOSITORY_INDEX: "/project/data-repos.yaml"
+        LSST_KAFKA_BROKER_ADDR: "sasquatch-kafka-bootstrap.sasquatch:9092"
+        LSST_KAFKA_PASSFILE: "/opt/lsst/software/jupyterlab/secrets/kafka_credentials.txt"
+        LSST_SCHEMA_REGISTRY_URL: "http://sasquatch-schema-registry.sasquatch:8081"
+        LSST_SITE: "summit"
+        LSST_TOPIC_SUBNAME: "sal"
+        PGPASSFILE: "/opt/lsst/software/jupyterlab/secrets/postgres-credentials.txt"
+        PGUSER: "oods"
+        RSP_SITE_TYPE: "telescope"
+        S3_ENDPOINT_URL: "https://s3-butler.cp.lsst.org"
+      initContainers:
+        - name: "inithome"
+          image:
+            repository: "ghcr.io/lsst-sqre/nublado-inithome"
+            tag: "8.8.0"
+          privileged: true
+          volumeMounts:
+            - containerPath: "/home"
+              volumeName: "home"
+      pullSecret: "pull-secret"
+      secrets:
+        - secretName: "nublado-lab-secret"
+          secretKey: "aws-credentials.ini"
+        - secretName: "nublado-lab-secret"
+          secretKey: "kafka_credentials.txt"
+        - secretName: "nublado-lab-secret"
+          secretKey: "postgres-credentials.txt"
+      volumes:
+        - name: "home"
+          source:
+            type: "nfs"
+            serverPath: "/rsphome"
+            server: "nfs-rsphome.cp.lsst.org"
+        - name: "project"
+          source:
+            type: "nfs"
+            serverPath: "/project"
+            server: "nfs-project.cp.lsst.org"
+        - name: "scratch"
+          source:
+            type: "nfs"
+            serverPath: "/scratch"
+            server: "nfs-scratch.cp.lsst.org"
+        - name: "latiss"
+          source:
+            type: "nfs"
+            serverPath: "/auxtel/repo/LATISS"
+            server: "nfs-auxtel.cp.lsst.org"
+        - name: "obs-env"
+          source:
+            type: "nfs"
+            serverPath: "/obs-env"
+            server: "nfs-obs-env.cp.lsst.org"
+        - name: "lsstdata-auxtel"
+          source:
+            type: "nfs"
+            serverPath: "/auxtel/lsstdata"
+            server: "nfs-auxtel.cp.lsst.org"
+        - name: "lsstdata-base-auxtel"
+          source:
+            type: "nfs"
+            serverPath: "/auxtel/lsstdata/base/auxtel"
+            server: "nfs-auxtel.cp.lsst.org"
+      volumeMounts:
+        - containerPath: "/home"
+          volumeName: "home"
+        - containerPath: "/project"
+          volumeName: "project"
+        - containerPath: "/scratch"
+          volumeName: "scratch"
+        - containerPath: "/repo/LATISS"
+          volumeName: "latiss"
+        - containerPath: "/net/obs-env"
+          volumeName: "obs-env"
+        - containerPath: "/readonly/lsstdata/auxtel"
+          volumeName: "lsstdata-auxtel"
+        - containerPath: "/data/lsstdata/base/auxtel"
+          volumeName: "lsstdata-base-auxtel"
+
+jupyterhub:
+  hub:
+    db:
+      upgrade: true
+      url: "postgresql://nublado3@postgresdb01.cp.lsst.org/nublado3"

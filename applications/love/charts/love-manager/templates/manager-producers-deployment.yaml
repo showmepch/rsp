@@ -1,0 +1,62 @@
+{{ range $manager_producer:= .Values.manager.producers }}
+{{ $_ := set $.Values "manager_producer" $manager_producer }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "love-manager-producer.fullname" $ }}-{{ $manager_producer.name }}
+  namespace: {{ $.Values.global.controlSystem.appNamespace }}
+  labels:
+    app.kubernetes.io/instance: {{ include "love-manager-producer.fullname" $ }}-{{ $manager_producer.name }}
+    app.kubernetes.io/name: {{ include "love-manager-producer.fullname" $ }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ include "love-manager-producer.fullname" $ }}-{{ $manager_producer.name }}
+      app.kubernetes.io/name: {{ include "love-manager-producer.fullname" $ }}
+  {{- if not $manager_producer.autoscaling.enabled }}
+  replicas: {{ $manager_producer.replicas }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ include "love-manager-producer.fullname" $ }}-{{ $manager_producer.name }}
+        app.kubernetes.io/name: {{ include "love-manager-producer.fullname" $ }}
+    spec:
+      containers:
+      - name: {{ include "love-manager-producer.fullname" $ }}-{{ $manager_producer.name }}
+        {{- $image := dict "repo" $manager_producer.image.repository "tag" $.Values.global.controlSystem.imageTag "rev" $manager_producer.image.revision }}
+        image: {{ include "helpers.makeImage" $image }}
+        imagePullPolicy: {{ $manager_producer.image.pullPolicy }}
+        ports:
+        - containerPort: {{ $.Values.manager.producers_ports.container }}
+        env:
+        {{- $data := dict "env" $manager_producer.env "secret" false }}
+        {{- include "helpers.envFromList" $data | indent 10 }}
+        {{- if $manager_producer.envSecrets }}
+        {{- $data := dict "secret" true "env" $manager_producer.envSecrets }}
+        {{- include "helpers.envFromList" $data | indent 10 }}
+        {{- end }}
+        {{- with $manager_producer.resources }}
+        resources:
+          {{- toYaml $manager_producer.resources | nindent 10 }}
+        {{- end }}
+        {{- with $manager_producer.readinessProbe }}
+        readinessProbe:
+          {{- toYaml $manager_producer.readinessProbe | nindent 10 }}
+        {{- end }}
+      imagePullSecrets:
+        - name: pull-secret
+      {{- with $manager_producer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml $ | nindent 8 }}
+      {{- end }}
+      {{- with $manager_producer.affinity }}
+      affinity:
+        {{- toYaml $ | nindent 8 }}
+      {{- end }}
+      {{- with $manager_producer.tolerations }}
+      tolerations:
+        {{- toYaml $ | nindent 8 }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,110 @@
+# Ingress configuration
+# https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml
+ingress-nginx:
+  controller:
+    # -- Allow Ingress resources to add NGINX configuration snippets. This
+    # is required by Gafaelfawr.
+    allowSnippetAnnotations: true
+
+    config:
+      # -- Level of dangerous annotations allowed. Must be set to `Critical`
+      # to allow snippets.
+      annotations-risk-level: "Critical"
+
+      # -- Put the complete path in `X-Forwarded-For`, not just the last hop,
+      # so that the client IP will be exposed to Gafaelfawr
+      compute-full-forwarded-for: "true"
+
+      # -- Size and number of the buffers used to read HTTP headers from
+      # clients. Increase this from its default size in case clients send
+      # large cookies.
+      large-client-header-buffers: "4 64k"
+
+      # -- Maximum size of the client request body (needs to be large enough
+      # to allow table uploads)
+      proxy-body-size: "100m"
+
+      # -- Maximum size of the buffer used to read HTTP headers from the
+      # backend or auth subrequest handler. This needs to be larger than the
+      # default because Gafaelfawr reflects all of the user's cookies other
+      # than the Gafaelfawr one.
+      proxy-buffer-size: "64k"
+
+      # -- Redirect all non-SSL access to SSL
+      ssl-redirect: "true"
+
+      # -- Enable the `X-Forwarded-For` processing
+      use-forwarded-headers: "true"
+
+      # -- Add additional per-server configuration used by Gafaelfawr to
+      # report errors from the authorization layer
+      # @default -- See `values.yaml`
+      server-snippet: |
+        set $auth_error_body '';
+        set $auth_ratelimit_limit '';
+        set $auth_ratelimit_remaining '';
+        set $auth_ratelimit_reset '';
+        set $auth_ratelimit_resource '';
+        set $auth_ratelimit_used '';
+        set $auth_retry_after '';
+        set $auth_status '';
+        set $auth_www_authenticate '';
+        location @autherror {
+          default_type application/json;
+          if ($auth_status = 400) {
+            add_header Cache-Control "no-cache, must-revalidate" always;
+            add_header WWW-Authenticate $auth_www_authenticate always;
+            return 400 $auth_error_body;
+          }
+          if ($auth_status = 429) {
+            add_header Cache-Control "no-cache, must-revalidate" always;
+            add_header Retry-After $auth_retry_after always;
+            add_header X-RateLimit-Limit $auth_ratelimit_limit always;
+            add_header X-RateLimit-Remaining $auth_ratelimit_remaining always;
+            add_header X-RateLimit-Reset $auth_ratelimit_reset always;
+            add_header X-RateLimit-Resource $auth_ratelimit_resource always;
+            add_header X-RateLimit-Used $auth_ratelimit_used always;
+            return 429 $auth_error_body;
+          }
+          add_header Cache-Control "no-cache, must-revalidate" always;
+          add_header WWW-Authenticate $auth_www_authenticate always;
+          return 403;
+        }
+
+    metrics:
+      # -- Enable metrics reporting via Prometheus
+      enabled: true
+
+    # -- Resource requests and limits for ingress-nginx controller
+    # @default -- See `values.yaml`
+    resources:
+      limits:
+        cpu: "4"
+        memory: "5Gi"
+      requests:
+        cpu: "80m"
+        memory: "500Mi"
+
+    service:
+      # -- Force traffic routing policy to Local so that the external IP in
+      # `X-Forwarded-For` will be correct
+      externalTrafficPolicy: Local
+
+    # -- Add labels used by `NetworkPolicy` objects to restrict access to the
+    # ingress and thus ensure that auth subrequest handlers run
+    # @default -- See `values.yaml`
+    podLabels:
+      gafaelfawr.lsst.io/ingress: "true"
+      hub.jupyter.org/network-access-proxy-http: "true"
+
+vaultCertificate:
+  # -- Whether to get the ingress TLS certificate from Vault instead of Let's
+  # Encrypt
+  enabled: false
+
+# The following will be set by parameters injected by Argo CD and should not
+# be set in the individual environment values files.
+global:
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: ""

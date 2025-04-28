@@ -1,0 +1,42 @@
+# https://github.com/ricoberger/vault-secrets-operator/tree/main/charts
+
+vault-secrets-operator:
+  # -- Additional environment variables used to configure the operator
+  # @default -- Use a Vault AppRole (see `values.yaml` for details)
+  environmentVars:
+    - name: "VAULT_ROLE_ID"
+      valueFrom:
+        secretKeyRef:
+          name: "vault-credentials"
+          key: "VAULT_ROLE_ID"
+    - name: "VAULT_SECRET_ID"
+      valueFrom:
+        secretKeyRef:
+          name: "vault-credentials"
+          key: "VAULT_SECRET_ID"
+
+  # -- Resource requests and limits for vault-secrets-operator
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "300m"
+      memory: "300Mi"
+    requests:
+      cpu: "20m"
+      memory: "30Mi"
+  serviceAccount:
+    # -- Disable creation of a secret for the service account. It shouldn't be
+    # needed and it conflicts with the secret we create that contains the
+    # credentials for talking to Vault.
+    createSecret: false
+
+  vault:
+    # -- URL of the underlying Vault implementation
+    # @default -- Set by Argo CD
+    address: ""
+
+    # -- Authentication method to use
+    authMethod: "approle"
+
+    # -- Sync secrets from vault on this cadence
+    reconciliationTime: 60

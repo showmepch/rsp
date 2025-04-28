@@ -1,0 +1,517 @@
+# Default values for Gafaelfawr.
+
+# -- Number of web frontend pods to start
+replicaCount: 1
+
+image:
+  # -- Gafaelfawr image to use
+  repository: "ghcr.io/lsst-sqre/gafaelfawr"
+
+  # -- Pull policy for the Gafaelfawr image
+  pullPolicy: "IfNotPresent"
+
+  # -- Tag of Gafaelfawr image to use
+  # @default -- The appVersion of the chart
+  tag: ""
+
+# -- Resource limits and requests for the Gafaelfawr frontend pod
+# @default -- See `values.yaml`
+resources:
+  limits:
+    cpu: "1"
+    memory: "400Mi"
+  requests:
+    cpu: "100m"
+    memory: "210Mi"
+
+# -- Affinity rules for the Gafaelfawr frontend pod
+affinity: {}
+
+# -- Node selector rules for the Gafaelfawr frontend pod
+nodeSelector: {}
+
+# -- Annotations for the Gafaelfawr frontend pod
+podAnnotations: {}
+
+# -- Tolerations for the Gafaelfawr frontend pod
+tolerations: []
+
+config:
+  # -- Where to send the user after they log out
+  # @default -- Top-level page of this Phalanx environment
+  afterLogoutUrl: null
+
+  # -- Whether to expose cookies to subdomains. DO NOT SET TO TRUE unless all
+  # subdomains of the environment base URL are guaranteed to only reference
+  # services protected by Gafaelfawr.
+  allowSubdomains: false
+
+  # -- URL for direct connections to the Gafaelfawr service, bypassing the
+  # Ingress. Must use a service name of `gafaelfawr` and port 8080.
+  # @default -- FQDN under `svc.cluster.local`
+  baseInternalUrl: null
+
+  # -- URL for the PostgreSQL database
+  # @default -- None, must be set if neither `cloudsql.enabled` nor
+  # `config.internalDatabase` are true
+  databaseUrl: null
+
+  # -- Whether to send trace and telemetry information to Sentry. This traces
+  # every call and therefore should only be enabled in non-production
+  # environments.
+  enableSentry: false
+
+  # -- HTML footer to add to any login error page (will be enclosed in a <p>
+  # tag).
+  errorFooter: null
+
+  # -- Whether to use the PostgreSQL server internal to the Kubernetes cluster
+  internalDatabase: false
+
+  # -- Choose from the text form of Python logging levels
+  logLevel: "INFO"
+
+  # -- List of netblocks used for internal Kubernetes IP addresses, used to
+  # determine the true client IP for logging
+  # @default -- [`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`]
+  proxies:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+
+  # -- Whether to send certain serious alerts to Slack. If `true`, the
+  # `slack-webhook` secret must also be set.
+  slackAlerts: false
+
+  # -- Session lifetime. Use `w`, `d`, `h`, `m`, and `s` for time intervals.
+  # For example, `1d6h23m` is one day, six hours, 23 minutes.
+  tokenLifetime: "30d"
+
+  # -- Whether to automatically update the Gafaelfawr database schema
+  updateSchema: false
+
+  github:
+    # -- GitHub client ID. One and only one of this, `config.cilogon.clientId`,
+    # or `config.oidc.clientId` must be set.
+    clientId: null
+
+  cilogon:
+    # -- CILogon client ID. One and only one of this,
+    # `config.github.clientId`, or `config.oidc.clientId` must be set.
+    clientId: null
+
+    # -- Where to send the user if their username cannot be found in LDAP
+    # @default -- Login fails with an error
+    enrollmentUrl: null
+
+    # -- Whether to use the test instance of CILogon
+    test: false
+
+    # -- Additional parameters to add
+    loginParams:
+      skin: "LSST"
+
+    # -- Claim from which to get the username
+    usernameClaim: "username"
+
+  oidc:
+    # -- Client ID for generic OpenID Connect support. One and only one of
+    # this, `config.cilogon.clientId`, or `config.github.clientId` must be set.
+    clientId: null
+
+    # -- Audience (`aud` claim) to expect in ID tokens.
+    # @default -- Same as `clientId`
+    audience: null
+
+    # -- URL to which to redirect the user for authorization
+    # @default -- None, must be set
+    loginUrl: null
+
+    # -- Additional parameters to add to the login request
+    loginParams: {}
+
+    # -- URL from which to retrieve the token for the user
+    # @default -- None, must be set
+    tokenUrl: null
+
+    # -- Where to send the user if their username cannot be found in LDAP
+    # @default -- Login fails with an error
+    enrollmentUrl: null
+
+    # -- Issuer for the JWT token
+    # @default -- None, must be set
+    issuer: null
+
+    # -- Scopes to request from the OpenID Connect provider. The `openid`
+    # scope will always be included.
+    scopes:
+      - "openid"
+
+    # -- Claim from which to get the username
+    usernameClaim: "uid"
+
+  ldap:
+    # -- LDAP server URL from which to retrieve user group information
+    # @default -- Do not use LDAP
+    url: null
+
+    # -- Bind DN for simple bind authentication. If set, `ldap-secret` must be
+    # set in the Gafaelfawr Vault secret. Set this or `kerberosConfig`, not
+    # both.
+    # @default -- Use anonymous binds
+    userDn: null
+
+    # -- Enable GSSAPI (Kerberos) binds to LDAP using this `krb5.conf` file.
+    # If set, `ldap-keytab` must be set in the Gafaelfawr Vault secret. Set
+    # either this or `userDn`, not both.
+    # @default -- Use anonymous binds
+    kerberosConfig: null
+
+    # -- Base DN for the LDAP search to find a user's groups
+    # @default -- None, must be set
+    groupBaseDn: null
+
+    # -- Object class containing group information
+    groupObjectClass: "posixGroup"
+
+    # -- Member attribute of the object class. Values must match the username
+    # returned in the token from the OpenID Connect authentication server.
+    groupMemberAttr: "member"
+
+    # -- Whether to search for group membership by user DN. Most LDAP servers
+    # list group members by full DNs, but if yours uses bare usernames, set
+    # this to false.
+    groupSearchByDn: true
+
+    # -- Base DN for the LDAP search to find a user's entry
+    # @default -- None, must be set
+    userBaseDn: null
+
+    # -- Search attribute containing the user's username
+    userSearchAttr: "uid"
+
+    # -- Attribute containing the user's full name
+    nameAttr: "displayName"
+
+    # -- Attribute containing the user's email address
+    emailAttr: "mail"
+
+    # -- Attribute containing the user's UID number (set to `uidNumber` for
+    # most LDAP servers)
+    # @default -- Get UID from upstream authentication provider
+    uidAttr: "uidNumber"
+
+    # -- Attribute containing the user's primary GID (set to `gidNumber` for
+    # most LDAP servers)
+    # @default -- Use GID of user private group
+    gidAttr: "gidNumber"
+
+    # -- Whether to synthesize a user private group for each user with a GID
+    # equal to their UID
+    addUserGroup: false
+
+  firestore:
+    # -- If set, assign UIDs and GIDs using Google Firestore in the given
+    # project. Cloud SQL must be enabled and the Cloud SQL service account
+    # must have read/write access to that Firestore instance.
+    # @default -- Firestore support is disabled
+    project: null
+
+  oidcServer:
+    # -- Whether to support OpenID Connect clients
+    enabled: false
+
+    # -- Issuer (`iss` claim) of generated ID tokens
+    # @default -- Base URL of this Phalanx environment
+    issuer: null
+
+    # -- Key ID (`kid` claim) of generated ID tokens, and the key ID served
+    # with the OAuth key metadata
+    keyId: "gafaelfawr"
+
+    # -- Mapping of group names to data release keywords, indicating
+    # membership in that group grants access to that data release. Used to
+    # construct the `data_rights` claim, which can be requested by asking for
+    # the `rubin` scope.
+    dataRightsMapping: {}
+
+  metrics:
+    # -- Whether to enable sending metrics
+    enabled: false
+
+    # -- Name under which to log metrics. Generally there is no reason to
+    # change this.
+    application: "gafaelfawr"
+
+    events:
+      # -- Topic prefix for events. It may sometimes be useful to change this
+      # in development environments.
+      topicPrefix: "lsst.square.metrics.events"
+
+    schemaManager:
+      # -- URL of the Confluent-compatible schema registry server
+      # @default -- Sasquatch in the local cluster
+      registryUrl: "http://sasquatch-schema-registry.sasquatch.svc.cluster.local:8081"
+
+      # -- Suffix to add to all registered subjects. This is sometimes useful
+      # for experimentation during development.
+      suffix: ""
+
+  # -- Quota settings (see
+  # [Quotas](https://gafaelfawr.lsst.io/user-guide/helm.html#quotas)).
+  quota: {}
+
+  # -- Usernames to add as administrators when initializing a new database.
+  # Used only if there are no administrators.
+  initialAdmins: []
+
+  # -- Names and descriptions of all scopes in use. This is used to populate
+  # the new token creation page. Only scopes listed here will be options when
+  # creating a new token. See [DMTN-235](https://dmtn-235.lsst.io/).
+  # @default -- See the `values.yaml` file
+  knownScopes:
+    "admin:jupyterlab": >-
+      Can create and destroy labs for any user
+    "admin:token": >-
+      Can create and modify tokens for any user
+    "exec:admin": >-
+      Administrative access to all APIs
+    "exec:internal-tools": >-
+      Use project-internal tools.
+    "exec:notebook": >-
+      Use the Notebook Aspect
+    "exec:portal": >-
+      Use the Portal Aspect
+    "read:alertdb": >-
+      Retrieve alert packets and schemas from the alert archive database
+    "read:image": >-
+      Retrieve images from project datasets
+    "read:tap": >-
+      Execute SELECT queries in the TAP interface on project datasets
+    "write:files": >-
+      Write access to POSIX file space
+    "write:sasquatch": >-
+      Write access to the Sasquatch telemetry service
+    "user:token": >-
+      Can create and modify user tokens
+
+  # -- Defines a mapping of scopes to groups that provide that scope. See
+  # [DMTN-235](https://dmtn-235.lsst.io/) for more details on scopes.
+  groupMapping: {}
+
+ingress:
+  # -- Defines additional FQDNs for Gafaelfawr.  This doesn't work for
+  # cookie or browser authentication, but for token-based services like
+  # git-lfs or the webdav server it does.
+  additionalHosts: []
+
+cloudsql:
+  # -- Enable the Cloud SQL Auth Proxy, used with Cloud SQL databases on Google
+  # Cloud. This will be run as a sidecar for the main Gafaelfawr pods, and as
+  # a separate service (behind a `NetworkPolicy`) for other, lower-traffic
+  # services.
+  enabled: false
+
+  image:
+    # -- Cloud SQL Auth Proxy image to use
+    repository: "gcr.io/cloudsql-docker/gce-proxy"
+
+    # -- Cloud SQL Auth Proxy tag to use
+    tag: "1.37.6"
+
+    # -- Pull policy for Cloud SQL Auth Proxy images
+    pullPolicy: "IfNotPresent"
+
+  # -- Instance connection name for a Cloud SQL PostgreSQL instance
+  # @default -- None, must be set if Cloud SQL Auth Proxy is enabled
+  instanceConnectionName: ""
+
+  # -- The Google service account that has an IAM binding to the `gafaelfawr`
+  # Kubernetes service account and has the `cloudsql.client` role
+  # @default -- None, must be set if Cloud SQL Auth Proxy is enabled
+  serviceAccount: ""
+
+  # -- Resource limits and requests for the Cloud SQL Proxy container
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "100m"
+      memory: "20Mi"
+    requests:
+      cpu: "5m"
+      memory: "7Mi"
+
+  # -- Affinity rules for the standalone Cloud SQL Proxy pod
+  affinity: {}
+
+  # -- Node selection rules for the standalone Cloud SQL Proxy pod
+  nodeSelector: {}
+
+  # -- Annotations for the standalone Cloud SQL Proxy pod
+  podAnnotations: {}
+
+  # -- Tolerations for the standalone Cloud SQL Proxy pod
+  tolerations: []
+
+maintenance:
+  # -- Cron schedule string for Gafaelfawr data consistency audit (in UTC)
+  auditSchedule: "30 3 * * *"
+
+  # -- Cron schedule string for Gafaelfawr periodic maintenance (in UTC)
+  maintenanceSchedule: "5 * * * *"
+
+  # -- How long the job is allowed to run before it will be terminated
+  # @default -- 300 (5 minutes)
+  deadlineSeconds: 300
+
+  # -- How long to keep old jobs around before deleting them
+  # @default -- 86400 (1 day)
+  cleanupSeconds: 86400
+
+  # -- Resource limits and requests for Gafaelfawr maintenance and audit pods
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+    requests:
+      cpu: "100m"
+      memory: "175Mi"
+
+  # -- Annotations for Gafaelfawr maintenance and audit pods
+  podAnnotations: {}
+
+  # -- Node selection rules for Gafaelfawr maintenance and audit pods
+  nodeSelector: {}
+
+  # -- Tolerations for Gafaelfawr maintenance and audit pods
+  tolerations: []
+
+  # -- Affinity rules for Gafaelfawr maintenance and audit pods
+  affinity: {}
+
+operator:
+  # -- Resource limits and requests for the Gafaelfawr Kubernetes operator.
+  # The limits are artificially higher since the operator pod is also where we
+  # manually run `gafaelfawr audit --fix`, which requires more CPU and memory.
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+    requests:
+      cpu: "10m"
+      memory: "175Mi"
+
+  # -- Annotations for the token management pod
+  podAnnotations: {}
+
+  # -- Node selection rules for the token management pod
+  nodeSelector: {}
+
+  # -- Tolerations for the token management pod
+  tolerations: []
+
+  # -- Affinity rules for the token management pod
+  affinity: {}
+
+redis-ephemeral:
+  config:
+    # -- Name of secret containing Redis password (do not change)
+    secretName: "gafaelfawr"
+
+    # -- Key inside secret from which to get the Redis password (do not
+    # change)
+    secretKey: "redis-password"
+
+  persistence:
+    # -- Whether to persist Redis storage of ephemeral data. This should
+    # always be false.
+    enabled: false
+
+  # -- Resource limits and requests for the ephemeral Redis pod
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "40Mi"
+    requests:
+      cpu: "50m"
+      memory: "15Mi"
+
+  # -- Affinity rules for the ephemeral Redis pod
+  affinity: {}
+
+  # -- Node selection rules for the ephemeral Redis pod
+  nodeSelector: {}
+
+  # -- Pod annotations for the ephemeral Redis pod
+  podAnnotations: {}
+
+  # -- Tolerations for the ephemeral Redis pod
+  tolerations: []
+
+redis:
+  config:
+    # -- Name of secret containing Redis password (do not change)
+    secretName: "gafaelfawr"
+
+    # -- Key inside secret from which to get the Redis password (do not
+    # change)
+    secretKey: "redis-password"
+
+  persistence:
+    # -- Whether to persist Redis storage and thus tokens. Setting this to
+    # false will use `emptyDir` and reset all tokens on every restart. Only
+    # use this for a test deployment.
+    enabled: true
+
+    # -- Amount of persistent storage to request
+    size: "1Gi"
+
+    # -- Class of storage to request
+    storageClass: ""
+
+    # -- Access mode of storage to request
+    accessMode: "ReadWriteOnce"
+
+    # -- Use an existing PVC, not dynamic provisioning. If this is set, the
+    # size, storageClass, and accessMode settings are ignored.
+    volumeClaimName: ""
+
+  # -- Resource limits and requests for the persistent Redis pod
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "200Mi"
+    requests:
+      cpu: "50m"
+      memory: "100Mi"
+
+  # -- Affinity rules for the persistent Redis pod
+  affinity: {}
+
+  # -- Node selection rules for the persistent Redis pod
+  nodeSelector: {}
+
+  # -- Pod annotations for the persistent Redis pod
+  podAnnotations: {}
+
+  # -- Tolerations for the persistent Redis pod
+  tolerations: []
+
+# The following will be set by parameters injected by Argo CD and should not
+# be set in the individual environment values files.
+global:
+  # -- Base URL for the environment
+  # @default -- Set by Argo CD
+  baseUrl: ""
+
+  # -- Host name for ingress
+  # @default -- Set by Argo CD
+  host: ""
+
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: ""

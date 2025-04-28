@@ -1,0 +1,15 @@
+ingress-nginx:
+  controller:
+    resources: {}
+    service:
+      externalTrafficPolicy: null
+      type: ClusterIP
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
+    admissionWebhooks:
+      enabled: false
+    extraArgs:
+      default-ssl-certificate: ingress-nginx/ingress-certificate
+
+vaultCertificate:
+  enabled: true

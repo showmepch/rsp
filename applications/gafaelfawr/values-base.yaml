@@ -1,0 +1,56 @@
+redis:
+  persistence:
+    storageClass: "rook-ceph-block"
+
+config:
+  slackAlerts: true
+  databaseUrl: "postgresql://gafaelfawr@postgresdb01.ls.lsst.org/gafaelfawr"
+
+  oidc:
+    clientId: "rsp-bts"
+    audience: "rsp-bts"
+    loginUrl: "https://keycloak.ls.lsst.org/realms/master/protocol/openid-connect/auth"
+    tokenUrl: "https://keycloak.ls.lsst.org/realms/master/protocol/openid-connect/token"
+    issuer: "https://keycloak.ls.lsst.org/realms/master"
+    scopes:
+      - "openid"
+    usernameClaim: "preferred_username"
+
+  ldap:
+    url: "ldap://ipa1.ls.lsst.org"
+    userDn: "uid=svc_rsp,cn=users,cn=accounts,dc=lsst,dc=cloud"
+    userBaseDn: "cn=users,cn=accounts,dc=lsst,dc=cloud"
+    uidAttr: "uidNumber"
+    gidAttr: "gidNumber"
+    groupBaseDn: "cn=groups,cn=accounts,dc=lsst,dc=cloud"
+
+  # Support OpenID Connect clients like Chronograf.
+  oidcServer:
+    enabled: true
+
+  # Allow access by GitHub team.
+  groupMapping:
+    "admin:jupyterlab":
+      - "sqre"
+    "exec:admin":
+      - "integration-testers"
+      - "sqre"
+    "exec:internal-tools":
+      - "rsp-bts"
+    "exec:notebook":
+      - "rsp-bts"
+    "exec:portal":
+      - "rsp-bts"
+    "read:image":
+      - "rsp-bts"
+    "read:tap":
+      - "rsp-bts"
+    "write:sasquatch":
+      - "sqre"
+
+  initialAdmins:
+    - "afausti"
+    - "athornton"
+    - "frossie"
+    - "jonathansick"
+    - "rra"

@@ -1,0 +1,91 @@
+apiVersion: v2
+name: sasquatch
+version: 1.0.0
+description: "Rubin Observatory's telemetry service"
+home: "https://sasquatch.lsst.io/"
+sources:
+  - "https://github.com/influxdata/influxdb"
+  - "https://github.com/obsidiandynamics/kafdrop"
+  - "https://github.com/confluentinc/kafka-rest"
+  - "https://github.com/lsst-sqre/sasquatch"
+appVersion: 0.1.0
+
+dependencies:
+  - name: strimzi-kafka
+    version: 1.0.0
+  - name: strimzi-registry-operator
+    version: 2.1.0
+    repository: https://lsst-sqre.github.io/charts/
+  - name: influxdb
+    alias: influxdb
+    condition: influxdb.enabled
+    version: 4.12.5
+    repository: https://helm.influxdata.com/
+  - name: influxdb-enterprise
+    condition: influxdb-enterprise.enabled
+    version: 1.0.0
+  - name: kafka-connect-manager
+    alias: kafka-connect-manager
+    condition: kafka-connect-manager.enabled
+    version: 1.0.0
+  - name: kafka-connect-manager
+    alias: kafka-connect-manager-enterprise
+    condition: kafka-connect-manager-enterprise.enabled
+    version: 1.0.0
+  - name: chronograf
+    condition: chronograf.enabled
+    version: 1.2.6
+    repository: https://helm.influxdata.com/
+  - name: kapacitor
+    condition: kapacitor.enabled
+    version: 1.4.7
+    repository: https://helm.influxdata.com/
+  - name: kafdrop
+    condition: kafdrop.enabled
+    version: 1.0.0
+  - name: telegraf
+    condition: telegraf.enabled
+    version: 1.0.0
+  - name: telegraf
+    alias: telegraf-oss
+    condition: telegraf-oss.enabled
+    version: 1.0.0
+  - name: rest-proxy
+    condition: rest-proxy.enabled
+    version: 1.0.0
+  - name: square-events
+    condition: squareEvents.enabled
+    version: 1.0.0
+  - name: backup
+    condition: backup.enabled
+    version: 1.0.0
+  - name: app-metrics
+    condition: app-metrics.enabled
+    version: 1.0.0
+  - name: tap
+    condition: tap.enabled
+    version: 1.0.0
+  - name: obsenv
+    condition: obsenv.enabled
+    version: 1.0.0
+  - name: backpack
+    condition: backpack.enabled
+    version: 1.0.0
+  - name: prompt-processing
+    condition: prompt-processing.enabled
+    version: 1.0.0
+  - name: control-system
+    condition: control-system.enabled
+    version: 1.0.0
+  - name: obsloctap
+    condition: obsloctap.enabled
+    version: 1.0.0
+  - name: consdb
+    condition: consdb.enabled
+    version: 1.0.0
+
+annotations:
+  phalanx.lsst.io/docs: |
+    - id: "SQR-068"
+      title: "Sasquatch: beyond the EFD"
+      url: "https://sqr-068.lsst.io/"

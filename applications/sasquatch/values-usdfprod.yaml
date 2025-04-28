@@ -1,0 +1,388 @@
+strimzi-kafka:
+  kafka:
+    config:
+      # -- Replica lag time can't be smaller than request.timeout.ms configuration in kafka connect.
+      replica.lag.time.max.ms: 120000
+      log.retention.minutes: 10080
+      offsets.retention.minutes: 10080
+
+  connect:
+    enabled: true
+    config:
+      # -- Increase the request timeout for Kafka Connect to 120 seconds
+      request.timeout.ms: 120000
+
+  mirrormaker2:
+    enabled: true
+    source:
+      bootstrapServer: sasquatch-summit-kafka-bootstrap.lsst.codes:9094
+      topicsPattern: "registry-schemas, lsst.sal.*, lsst.dm.*, lsst.backpack.*, lsst.ATCamera.*, lsst.CCCamera.*, lsst.MTCamera.*, lsst.obsenv.*, lsst.cp.*"
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
+  users:
+    replicator:
+      enabled: true
+    telegraf:
+      enabled: true
+  kraft:
+    enabled: true
+  kafkaController:
+    enabled: true
+  cruiseControl:
+    enabled: true
+  brokerStorage:
+    enabled: true
+    migration:
+      enabled: false
+      rebalance: false
+      brokers:
+        - 3
+        - 4
+        - 5
+    size: 1.5Ti
+    storageClassName: zfs--rubin-efd
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - sdfk8sn004
+                    - sdfk8sn003
+                    - sdfk8sn007
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: strimzi.io/cluster
+                  operator: In
+                  values:
+                    - sasquatch
+            topologyKey: kubernetes.io/hostname
+
+influxdb:
+  enabled: false
+
+influxdb-enterprise:
+  enabled: true
+  meta:
+    service:
+      type: LoadBalancer
+      annotations:
+        metallb.universe.tf/address-pool: sdf-services
+    ingress:
+      enabled: true
+      hostname: usdf-rsp.slac.stanford.edu
+    persistence:
+      # -- Enable InfluxDB Enterprise meta pod persistence
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 16Gi
+    # -- InfluxDB Enterprise meta pod resources
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 2
+      limits:
+        memory: 4Gi
+        cpu: 4
+  data:
+    replicas: 2
+    ingress:
+      enabled: true
+      hostname: usdf-rsp.slac.stanford.edu
+    # -- Enable InfluxDB Enterprise data pod persistence
+    persistence:
+      enabled: true
+      accessMode: ReadWriteOnce
+      storageClass: zfs--rubin-efd
+      size: 30Ti
+    # -- InfluxDB Enterprise data pod resources
+    resources:
+      requests:
+        memory: 192Gi
+        cpu: 8
+      limits:
+        memory: 192Gi
+        cpu: 8
+
+telegraf:
+  enabled: true
+  influxdb:
+    url: "http://sasquatch-influxdb-enterprise-data.sasquatch:8086"
+  kafkaConsumers:
+    # Sasquatch backpack connector
+    backpack:
+      enabled: true
+      database: "lsst.backpack"
+      timestamp_field: "timestamp"
+      topicRegexps: |
+        [ "lsst.backpack" ]
+      debug: true
+    # CSC connectors
+    maintel:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTAOS", "lsst.sal.MTDome", "lsst.sal.MTDomeTrajectory", "lsst.sal.MTPtg" ]
+      debug: true
+    mtmount:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTMount" ]
+      debug: true
+    comcam:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.CCCamera", "lsst.sal.CCHeaderService", "lsst.sal.CCOODS" ]
+      debug: true
+    envsys:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+         [ "lsst.sal.DIMM", "lsst.sal.DREAM", "lsst.sal.EAS", "lsst.sal.ESS", "lsst.sal.DSM", "lsst.sal.EPM", "lsst.sal.HVAC", "lsst.sal.WeatherForecast" ]
+      debug: true
+    m1m3:
+      enabled: true
+      repair: false
+      metric_batch_size: 2500
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTM1M3" ]
+      debug: true
+    m2:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTHexapod", "lsst.sal.MTM2", "lsst.sal.MTRotator" ]
+      debug: true
+    obssys:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.Scheduler", "lsst.sal.Script", "lsst.sal.ScriptQueue", "lsst.sal.Watcher" ]
+      debug: true
+    ocps:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.OCPS" ]
+      debug: true
+    pmd:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.PMD" ]
+      debug: true
+    calsys:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.ATMonochromator", "lsst.sal.ATWhiteLight", "lsst.sal.CBP", "lsst.sal.Electrometer", "lsst.sal.FiberSpectrograph", "lsst.sal.LEDProjector", "lsst.sal.LinearStage", "lsst.sal.TunableLaser" ]
+      debug: true
+    mtaircompressor:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTAirCompressor" ]
+      debug: true
+    genericcamera:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.GCHeaderService", "lsst.sal.GenericCamera" ]
+      debug: true
+    gis:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.GIS" ]
+      debug: true
+    mtvms:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTVMS" ]
+      debug: true
+    lsstcam:
+      enabled: true
+      repair: false
+      metric_batch_size: 250
+      max_undelivered_messages: 5000
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTCamera", "lsst.sal.MTHeaderService", "lsst.sal.MTOODS" ]
+      debug: true
+    auxtel:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.ATAOS", "lsst.sal.ATBuilding", "lsst.sal.ATDome", "lsst.sal.ATDomeTrajectory", "lsst.sal.ATHexapod", "lsst.sal.ATPneumatics", "lsst.sal.ATPtg", "lsst.sal.ATMCS" ]
+      debug: true
+    latiss:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.ATCamera", "lsst.sal.ATHeaderService", "lsst.sal.ATOODS", "lsst.sal.ATSpectrograph" ]
+      debug: true
+    test:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.Test" ]
+      debug: true
+    lasertracker:
+      enabled: true
+      repair: false
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.LaserTracker" ]
+      debug: true
+    # CCS connectors (experimental) data is being written on separate databases for now
+    atcamera:
+      enabled: true
+      database: "lsst.ATCamera"
+      timestamp_format: "unix_ms"
+      timestamp_field: "timestamp"
+      tags: |
+        [ "Agent", "Aspic", "Location", "Raft", "Reb", "Sensor", "Source" ]
+      topicRegexps: |
+        [ "lsst.ATCamera" ]
+      debug: true
+    cccamera:
+      enabled: true
+      database: "lsst.CCCamera"
+      timestamp_format: "unix_ms"
+      timestamp_field: "timestamp"
+      tags: |
+        [ "Agent", "Aspic", "Cold", "Cryo", "Hardware", "Location", "Ps", "RTD", "Raft", "Reb", "Segment", "Sensor", "Source" ]
+      topicRegexps: |
+        [ "lsst.CCCamera" ]
+      debug: true
+    mtcamera:
+      enabled: true
+      database: "lsst.MTCamera"
+      timestamp_format: "unix_ms"
+      timestamp_field: "timestamp"
+      tags: |
+        [ "Agent", "Aspic", "Axis", "Canbus", "Cip", "Clamp", "Cold", "Controller", "Cryo", "Gateway", "Hardware", "Hip", "Hook", "Latch", "Location", "Ps", "RTD", "Raft", "Reb", "Segment", "Sensor", "Socket", "Source", "Truck" ]
+      topicRegexps: |
+        [ "lsst.MTCamera" ]
+      debug: true
+    obsenv:
+      enabled: true
+      database: "lsst.obsenv"
+      timestamp_format: "unix_ms"
+      timestamp_field: "timestamp"
+      topicRegexps: |
+        [ "lsst.obsenv" ]
+      debug: true
+    cp:
+      enabled: true
+      database: "lsst.cp"
+      timestamp_format: "unix"
+      timestamp_field: "timestamp"
+      topicRegexps: |
+        [ "lsst.cp" ]
+      tags: |
+        [ "dataset_tag", "band", "instrument", "skymap", "detector", "physical_filter", "tract", "exposure", "patch", "visit", "run", "pipeline" ]
+      debug: true
+
+kafdrop:
+  ingress:
+    enabled: true
+    hostname: usdf-rsp.slac.stanford.edu
+
+chronograf:
+  ingress:
+    enabled: true
+    hostname: usdf-rsp.slac.stanford.edu
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  env:
+    GENERIC_NAME: "OIDC"
+    GENERIC_AUTH_URL: https://usdf-rsp.slac.stanford.edu/auth/openid/login
+    GENERIC_TOKEN_URL: https://usdf-rsp.slac.stanford.edu/auth/openid/token
+    USE_ID_TOKEN: 1
+    JWKS_URL: https://usdf-rsp.slac.stanford.edu/.well-known/jwks.json
+    GENERIC_API_URL: https://usdf-rsp.slac.stanford.edu/auth/userinfo
+    GENERIC_SCOPES: openid
+    GENERIC_API_KEY: sub
+    PUBLIC_URL: https://usdf-rsp.slac.stanford.edu/
+    STATUS_FEED_URL: https://raw.githubusercontent.com/lsst-sqre/rsp_broadcast/main/jsonfeeds/usdfprod.json
+
+kapacitor:
+  influxURL: http://sasquatch-influxdb-enterprise-data.sasquatch:8086
+
+app-metrics:
+  enabled: true
+  apps:
+    - noteburst
+  influxdb:
+    url: http://sasquatch-influxdb-enterprise-data.sasquatch:8086
+
+backup:
+  enabled: true
+  persistence:
+    size: 100Ti
+    storageClass: wekafs--sdf-k8s01
+  backupItems:
+    - name: chronograf
+      enabled: true
+      retentionDays: 7
+    - name: kapacitor
+      enabled: true
+      retentionDays: 7
+    - name: influxdb-enterprise-incremental
+      enabled: true
+
+prompt-processing:
+  enabled: true
+
+consdb:
+  enabled: true

@@ -1,0 +1,22 @@
+db:
+  user: "oods"
+  passwordkey: "oods-password"
+  host: "postgresdb01.cp.lsst.org"
+  database: "exposurelog"
+lfa:
+  s3EndpointUrl: "https://s3.cp.lsst.org"
+hinfo:
+  latiss:
+    enable: true
+    tag: "25.3.2"
+    logConfig: "consdb.hinfo=DEBUG"
+  lsstcomcam:
+    enable: true
+    tag: "25.3.2"
+    logConfig: "consdb.hinfo=DEBUG"
+  lsstcam:
+    enable: true
+    tag: "25.3.2"
+pq:
+  image:
+    tag: "25.3.2"

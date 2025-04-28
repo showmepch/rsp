@@ -1,0 +1,6 @@
+path "{{ mount_point }}/data/{{ path }}/+" {
+  capabilities = ["read"]
+}
+path "{{ mount_point }}/metadata/{{ path }}/+" {
+  capabilities = ["list", "read"]
+}

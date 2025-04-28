@@ -1,0 +1,93 @@
+controller:
+  googleServiceAccount: "nublado-controller@science-platform-stable-6994.iam.gserviceaccount.com"
+  slackAlerts: true
+  config:
+    images:
+      source:
+        type: "google"
+        location: "us-central1"
+        projectId: "rubin-shared-services-71ec"
+        repository: "sciplat"
+        image: "sciplat-lab"
+    lab:
+      env:
+        AWS_SHARED_CREDENTIALS_FILE: "/opt/lsst/software/jupyterlab/secrets/aws-credentials.ini"
+        PGPASSFILE: "/opt/lsst/software/jupyterlab/secrets/postgres-credentials.txt"
+        GOOGLE_APPLICATION_CREDENTIALS: "/opt/lsst/software/jupyterlab/secrets/butler-gcs-idf-creds.json"
+        DAF_BUTLER_REPOSITORY_INDEX: "https://data.lsst.cloud/api/butler/configs/idf-repositories.yaml"
+        S3_ENDPOINT_URL: "https://sdfdatas3.slac.stanford.edu"
+        CULL_TERMINAL_INACTIVE_TIMEOUT: "432000"  # 5 days
+        TMPDIR: "/tmp"
+      initContainers:
+        - name: "inithome"
+          image:
+            repository: "us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/inithome"
+            tag: "8.8.2"
+          privileged: true
+          volumeMounts:
+            - containerPath: "/home"
+              volumeName: "home"
+      nodeSelector:
+        node_pool: "user-lab-pool"
+      secrets:
+        - secretName: "nublado-lab-secret"
+          secretKey: "aws-credentials.ini"
+        - secretName: "nublado-lab-secret"
+          secretKey: "butler-gcs-idf-creds.json"
+        - secretName: "nublado-lab-secret"
+          secretKey: "butler-hmac-idf-creds.json"
+        - secretName: "nublado-lab-secret"
+          secretKey: "postgres-credentials.txt"
+      sizes:
+        - size: small
+          cpu: 1.0
+          memory: 4Gi
+        - size: medium
+          cpu: 2.0
+          memory: 8Gi
+        - size: large
+          cpu: 4.0
+          memory: 16Gi
+      tolerations:
+        - key: "nublado.lsst.io/permitted"
+          operator: "Exists"
+          effect: "NoExecute"
+      volumes:
+        - name: "home"
+          source:
+            serverPath: "/share1/home"
+            server: "10.13.105.122"
+            type: "nfs"
+        - name: "project"
+          source:
+            serverPath: "/share1/project"
+            server: "10.13.105.122"
+            type: "nfs"
+        - name: "scratch"
+          source:
+            serverPath: "/share1/scratch"
+            server: "10.13.105.122"
+            type: "nfs"
+      volumeMounts:
+        - containerPath: "/home"
+          volumeName: "home"
+        - containerPath: "/project"
+          volumeName: "project"
+        - containerPath: "/scratch"
+          volumeName: "scratch"
+    metrics:
+      enabled: true
+
+jupyterhub:
+  hub:
+    config:
+      ServerApp:
+        shutdown_no_activity_timeout: 432000
+    db:
+      url: "postgresql://nublado@cloud-sql-proxy.nublado/nublado"
+      upgrade: true
+
+cloudsql:
+  enabled: true
+  instanceConnectionName: "science-platform-stable-6994:us-central1:science-platform-stable-0c29612b"
+  serviceAccount: "nublado@science-platform-stable-6994.iam.gserviceaccount.com"

@@ -1,0 +1,25 @@
+argo-cd:
+  configs:
+    cm:
+      url: "https://data-dev.lsst.eu/argo-cd"
+      dex.config: |
+        connectors:
+          # Auth using GitHub.
+          # See https://dexidp.io/docs/connectors/github/
+          - type: github
+            id: github
+            name: GitHub
+            config:
+              clientID: ae314e45a6af43ea910a
+              # Reference to key in argo-secret Kubernetes resource
+              clientSecret: $dex.clientSecret
+              orgs:
+                - name: rubin-lsst
+    rbac:
+      policy.csv: |
+        g, rubin-lsst:admin, role:admin
+
+  server:
+    ingress:
+      hostname: "data-dev.lsst.eu"
+      tls: false

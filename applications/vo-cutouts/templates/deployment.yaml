@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "vo-cutouts"
+  labels:
+    {{- include "vo-cutouts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vo-cutouts.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: "frontend"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.frontend.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "vo-cutouts.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: "frontend"
+        vo-cutouts-redis-client: "true"
+    spec:
+      {{- with .Values.frontend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: "vo-cutouts"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: "vo-cutouts"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "all"
+            readOnlyRootFilesystem: true
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          ports:
+            - containerPort: 8080
+              name: "http"
+              protocol: "TCP"
+          env:
+            - name: "CUTOUT_ARQ_QUEUE_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "vo-cutouts"
+                  key: "redis-password"
+            {{- if .Values.config.slackAlerts }}
+            - name: "CUTOUT_SLACK_WEBHOOK"
+              valueFrom:
+                secretKeyRef:
+                  name: "vo-cutouts"
+                  key: "slack-webhook"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: "vo-cutouts"
+          readinessProbe:
+            httpGet:
+              path: "/api/cutout/availability"
+              port: "http"
+          {{- with .Values.frontend.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.frontend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

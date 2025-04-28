@@ -1,0 +1,322 @@
+strimzi-kafka:
+  mirrormaker2:
+    enabled: false
+    source:
+      bootstrapServer: sasquatch-summit-kafka-bootstrap.lsst.codes:9094
+      topicsPattern: "lsst.sal.*, registry-schemas"
+    replication:
+      policy:
+        separator: "."
+        class: "org.apache.kafka.connect.mirror.DefaultReplicationPolicy"
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 8Gi
+  cluster:
+    monitorLabel:
+      lsst.io/monitor: "true"
+  kafka:
+    config:
+      auto.create.topics.enable: false
+      log.cleaner.min.compaction.lag.ms: 108000000
+      log.message.timestamp.type: LogAppendTime
+      log.retention.hours: 30
+      log.retention.ms: 108000000
+    storage:
+      storageClassName: rook-ceph-block
+      size: 1Ti
+    listeners:
+      plain:
+        enabled: true
+    externalListener:
+      tls:
+        enabled: true
+      bootstrap:
+        loadBalancerIP: "139.229.151.176"
+        host: sasquatch-base-kafka-bootstrap.lsst.codes
+      brokers:
+        - broker: 6
+          loadBalancerIP: "139.229.151.172"
+          host: sasquatch-base-kafka-0.lsst.codes
+        - broker: 7
+          loadBalancerIP: "139.229.151.173"
+          host: sasquatch-base-kafka-1.lsst.codes
+        - broker: 8
+          loadBalancerIP: "139.229.151.174"
+          host: sasquatch-base-kafka-2.lsst.codes
+    resources:
+      requests:
+        memory: 128Gi
+        cpu: 32
+      limits:
+        memory: 128Gi
+        cpu: 32
+    metricsConfig:
+      enabled: true
+  kafkaExporter:
+    enabled: true
+    enableSaramaLogging: true
+    resources:
+      requests:
+        cpu: "3"
+        memory: 512Mi
+      limits:
+        cpu: "8"
+        memory: 1Gi
+  kraft:
+    enabled: true
+  kafkaController:
+    enabled: true
+    resources:
+      requests:
+        memory: 8Gi
+        cpu: "2"
+      limits:
+        memory: 8Gi
+        cpu: "2"
+  users:
+    replicator:
+      enabled: true
+    telegraf:
+      enabled: true
+  registry:
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /$2
+      hostname: base-lsp.lsst.codes
+      path: /schema-registry(/|$)(.*)
+  connect:
+    config:
+      key.converter: org.apache.kafka.connect.json.JsonConverter
+      key.converter.schemas.enable: false
+  cruiseControl:
+    enabled: true
+  brokerStorage:
+    enabled: true
+    migration:
+      enabled: false
+      rebalance: false
+      brokers:
+        - 0
+        - 1
+        - 2
+    size: 1.5Ti
+    storageClassName: localdrive
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kafka-broker
+                  operator: In
+                  values:
+                    - "true"
+    tolerations:
+      - key: "kafka-broker"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+influxdb:
+  ingress:
+    enabled: false
+    hostname: base-lsp.lsst.codes
+  persistence:
+    storageClass: rook-ceph-block
+  resources:
+    requests:
+      memory: 64Gi
+      cpu: 8
+    limits:
+      memory: 64Gi
+      cpu: 8
+
+customInfluxDBIngress:
+  enabled: true
+  hostname: base-lsp.lsst.codes
+
+telegraf:
+  enabled: true
+  kafkaConsumers:
+    auxtel:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.ATAOS", "lsst.sal.ATBuilding", "lsst.sal.ATDome", "lsst.sal.ATDomeTrajectory", "lsst.sal.ATHexapod", "lsst.sal.ATPneumatics", "lsst.sal.ATPtg", "lsst.sal.ATMCS" ]
+      debug: true
+    maintel:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTAOS", "lsst.sal.MTDome", "lsst.sal.MTDomeTrajectory", "lsst.sal.MTPtg" ]
+      debug: true
+    mtmount:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTMount" ]
+      debug: true
+    envsys:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.DIMM", "lsst.sal.DREAM", "lsst.sal.DSM", "lsst.sal.EAS", "lsst.sal.EPM", "lsst.sal.ESS", "lsst.sal.HVAC", "lsst.sal.WeatherForecast" ]
+      debug: true
+    latiss:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.ATCamera", "lsst.sal.ATHeaderService", "lsst.sal.ATOODS", "lsst.sal.ATSpectrograph" ]
+      debug: true
+    m1m3:
+      enabled: true
+      metric_batch_size: 2500
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTM1M3" ]
+      debug: true
+    m2:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTHexapod", "lsst.sal.MTM2", "lsst.sal.MTRotator" ]
+      debug: true
+    obssys:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.Scheduler", "lsst.sal.Script", "lsst.sal.ScriptQueue", "lsst.sal.Watcher" ]
+      debug: true
+    ocps:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.OCPS" ]
+      debug: true
+    test:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.Test" ]
+      debug: true
+    mtaircompressor:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTAirCompressor" ]
+      debug: true
+    lasertracker:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.LaserTracker" ]
+      debug: true
+    genericcamera:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.GCHeaderService", "lsst.sal.GenericCamera" ]
+      debug: true
+    lsstcam:
+      enabled: true
+      metric_batch_size: 250
+      max_undelivered_messages: 5000
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.MTCamera", "lsst.sal.MTHeaderService", "lsst.sal.MTOODS" ]
+      debug: true
+    calsys:
+      enabled: true
+      database: "efd"
+      topicRegexps: |
+        [ "lsst.sal.CBP", "lsst.sal.Electrometer", "lsst.sal.LEDProjector", "lsst.sal.LinearStage", "lsst.sal.TunableLaser" ]
+      debug: true
+    mtvms:
+      enabled: true
+      database: "efd"
+      timestamp_field: "private_efdStamp"
+      topicRegexps: |
+        [ "lsst.sal.MTVMS" ]
+      debug: true
+    obsenv:
+      enabled: true
+      database: "lsst.obsenv"
+      timestamp_format: "unix_ms"
+      timestamp_field: "timestamp"
+      topicRegexps: |
+        [ "lsst.obsenv" ]
+      debug: true
+  resources:
+    limits:
+      cpu: "2"
+      memory: "8Gi"
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+
+kafdrop:
+  ingress:
+    enabled: true
+    hostname: base-lsp.lsst.codes
+
+rest-proxy:
+  enabled: true
+  ingress:
+    enabled: true
+    hostname: base-lsp.lsst.codes
+  configurationOverrides:
+    "access.control.allow.origin": https://base-lsp.lsst.codes/love
+  kafka:
+    topicPrefixes:
+      - lsst.obsenv
+
+chronograf:
+  persistence:
+    storageClass: rook-ceph-block
+  ingress:
+    enabled: true
+    hostname: base-lsp.lsst.codes
+  env:
+    GENERIC_NAME: "OIDC"
+    GENERIC_AUTH_URL: https://base-lsp.lsst.codes/auth/openid/login
+    GENERIC_TOKEN_URL: https://base-lsp.lsst.codes/auth/openid/token
+    USE_ID_TOKEN: 1
+    JWKS_URL: https://base-lsp.lsst.codes/.well-known/jwks.json
+    GENERIC_API_URL: https://base-lsp.lsst.codes/auth/openid/userinfo
+    GENERIC_SCOPES: openid
+    GENERIC_API_KEY: sub
+    PUBLIC_URL: https://base-lsp.lsst.codes
+    STATUS_FEED_URL: https://raw.githubusercontent.com/lsst-sqre/rsp_broadcast/main/jsonfeeds/base.json
+
+kapacitor:
+  persistence:
+    storageClass: rook-ceph-block
+
+backup:
+  enabled: true
+  persistence:
+    size: 100Gi
+    storageClass: rook-ceph-block
+  backupItems:
+    - name: chronograf
+      enabled: true
+      retentionDays: 7
+    - name: kapacitor
+      enabled: true
+      retentionDays: 7
+
+obsenv:
+  enabled: true
+
+control-system:
+  enabled: true
+  topics:
+    - lsst.s3.raw.latiss
+    - lsst.s3.raw.lsstcam
+
+consdb:
+  enabled: true

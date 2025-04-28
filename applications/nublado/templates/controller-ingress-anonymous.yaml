@@ -1,0 +1,39 @@
+apiVersion: gafaelfawr.lsst.io/v1alpha1
+kind: GafaelfawrIngress
+metadata:
+  name: "nublado-controller-anonymous"
+  labels:
+    {{- include "nublado.labels" . | nindent 4 }}
+config:
+  baseUrl: {{ .Values.global.baseUrl | quote }}
+  scopes:
+    anonymous: true
+template:
+  metadata:
+    name: "controller-anonymous"
+  spec:
+    rules:
+      - host: {{ .Values.global.host | quote }}
+        http:
+          paths:
+            - path: "{{ .Values.controller.config.pathPrefix }}/openapi.json"
+              pathType: "Exact"
+              backend:
+                service:
+                  name: "nublado-controller"
+                  port:
+                    number: 80
+            - path: "{{ .Values.controller.config.pathPrefix }}/docs"
+              pathType: "Exact"
+              backend:
+                service:
+                  name: "nublado-controller"
+                  port:
+                    number: 80
+            - path: "{{ .Values.controller.config.pathPrefix }}/redoc"
+              pathType: "Exact"
+              backend:
+                service:
+                  name: "nublado-controller"
+                  port:
+                    number: 80

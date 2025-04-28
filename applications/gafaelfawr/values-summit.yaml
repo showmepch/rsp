@@ -1,0 +1,58 @@
+redis:
+  persistence:
+    storageClass: "rook-ceph-block"
+
+config:
+  slackAlerts: true
+  databaseUrl: "postgresql://gafaelfawr@postgresdb01.cp.lsst.org/gafaelfawr"
+
+  oidc:
+    clientId: "rsp-summit"
+    audience: "rsp-summit"
+    loginUrl: "https://keycloak.cp.lsst.org/realms/master/protocol/openid-connect/auth"
+    tokenUrl: "https://keycloak.cp.lsst.org/realms/master/protocol/openid-connect/token"
+    issuer: "https://keycloak.cp.lsst.org/realms/master"
+    scopes:
+      - "openid"
+    usernameClaim: "preferred_username"
+
+  ldap:
+    url: "ldap://ipa1.cp.lsst.org"
+    userDn: "uid=svc_rsp,cn=users,cn=accounts,dc=lsst,dc=cloud"
+    userBaseDn: "cn=users,cn=accounts,dc=lsst,dc=cloud"
+    uidAttr: "uidNumber"
+    gidAttr: "gidNumber"
+    groupBaseDn: "cn=groups,cn=accounts,dc=lsst,dc=cloud"
+
+  # Support OpenID Connect clients like Chronograf.
+  oidcServer:
+    enabled: true
+
+  # Allow access by GitHub team.
+  groupMapping:
+    "admin:jupyterlab":
+      - "sqre"
+    "exec:admin":
+      - "k8s-yagan-admin"
+      - "sqre"
+    "exec:internal-tools":
+      - "rsp-summit"
+    "exec:notebook":
+      - "rsp-summit"
+    "exec:portal":
+      - "rsp-summit"
+    "read:image":
+      - "rsp-summit"
+    "read:tap":
+      - "rsp-summit"
+    "write:sasquatch":
+      - "sqre"
+
+  initialAdmins:
+    - "afausti"
+    - "athornton"
+    - "fajpunk"
+    - "frossie"
+    - "jonathansick"
+    - "rra"
+    - "stvoutsin"

@@ -1,0 +1,691 @@
+# Default values for Nublado.
+
+controller:
+  # -- Affinity rules for the Nublado controller
+  affinity: {}
+
+  # -- If Google Artifact Registry is used as the image source, the Google
+  # service account that has an IAM binding to the `nublado-controller`
+  # Kubernetes service account and has the Artifact Registry reader role
+  # @default -- None, must be set when using Google Artifact Registry
+  googleServiceAccount: null
+
+  image:
+    # -- Nublado controller image to use
+    repository: "ghcr.io/lsst-sqre/nublado-controller"
+
+    # -- Pull policy for the controller image
+    pullPolicy: "IfNotPresent"
+
+    # -- Tag of Nublado controller image to use
+    # @default -- The appVersion of the chart
+    tag: null
+
+  ingress:
+    # -- Additional annotations to add for the Nublado controller ingress
+    annotations: {}
+
+  # -- Node selector rules for the Nublado controller
+  nodeSelector: {}
+
+  # -- Annotations for the Nublado controller
+  podAnnotations: {}
+
+  # -- Resource limits and requests for the Nublado controller
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+    requests:
+      cpu: "0.05"
+      memory: "200Mi"
+
+  # -- Whether to enable Slack alerts. If set to true, `slack_webhook` must be
+  # set in the corresponding Nublado Vault secret.
+  slackAlerts: false
+
+  # -- Tolerations for the Nublado controller
+  tolerations: []
+
+  # Passed as YAML to the lab controller.
+  config:
+    # -- Level of Python logging
+    logLevel: "INFO"
+
+    # -- Path prefix that will be routed to the controller
+    pathPrefix: "/nublado"
+
+    fileserver:
+      # -- Enable user file servers
+      enabled: false
+
+      # -- Affinity rules for user file server pods
+      affinity: {}
+
+      # -- Argo CD application in which to collect user file servers
+      application: "nublado-fileservers"
+
+      # -- Timeout to wait for Kubernetes to create file servers, in Safir
+      # `parse_timedelta` format
+      creationTimeout: 2m
+
+      # -- Timeout for deleting a user's file server from Kubernetes, in Safir
+      # `parse_timedelta` format
+      deleteTimeout: 1m
+
+      # -- Timeout for idle user fileservers, in Safir `parse_timedelta`
+      # format
+      idleTimeout: 1h
+
+      image:
+        # -- File server image to use
+        repository: "ghcr.io/lsst-sqre/worblehat"
+
+        # -- Pull policy for file server image
+        pullPolicy: "IfNotPresent"
+
+        # -- Tag of file server image to use
+        tag: "0.1.0"
+
+      # -- Namespace for user file servers
+      namespace: "fileservers"
+
+      # -- Node selector rules for user file server pods
+      nodeSelector: {}
+
+      # -- Path prefix for user file servers
+      pathPrefix: "/files"
+
+      # -- Resource requests and limits for user file servers
+      # @default -- See `values.yaml`
+      resources:
+        requests:
+          cpu: 0.1
+          memory: "1Gi"
+        limits:
+          cpu: 1
+          memory: "10Gi"
+
+      # -- Tolerations for user file server pods
+      tolerations: []
+
+      # -- Volumes that should be made available via WebDAV
+      volumeMounts: []
+      # volumeMounts:
+      # - containerPath: "/project"
+      #   readOnly: true
+      #   volumeName: "project"
+
+    images:
+      # -- Source for prepulled images. For Docker, set `type` to `docker`,
+      # `registry` to the hostname and `repository` to the name of the
+      # repository. For Google Artifact Repository, set `type` to `google`,
+      # `location` to the region, `projectId` to the Google project,
+      # `repository` to the name of the repository, and `image` to the name of
+      # the image.
+      # @default -- None, must be specified
+      source: {}
+
+      # -- Tag marking the recommended image (shown first in the menu)
+      recommendedTag: "recommended"
+
+      # -- Number of most-recent releases to prepull.
+      numReleases: 1
+
+      # -- Number of most-recent weeklies to prepull.
+      numWeeklies: 2
+
+      # -- Number of most-recent dailies to prepull.
+      numDailies: 3
+
+      # -- Restrict images to this SAL cycle, if given.
+      cycle: null
+
+      # -- List of additional image tags to prepull. Listing the image tagged
+      # as recommended here is recommended when using a Docker image source to
+      # ensure its name can be expanded properly in the menu.
+      pin: []
+
+      # -- Additional tags besides `recommendedTag` that should be recognized
+      # as aliases.
+      aliasTags: []
+
+    lab:
+      # -- How frequently the lab should report activity to JupyterHub in
+      # Safir `parse_timedelta` format
+      activityInterval: 1h
+
+      # -- Affinity rules for user lab pods
+      affinity: {}
+
+      # -- Argo CD application in which to collect user lab objects
+      application: "nublado-users"
+
+      # -- Timeout for deleting a user's lab resources from Kubernetes in
+      # Safir `parse_timedelta` format
+      deleteTimeout: 1m
+
+      # -- Environment variables to set for every user lab
+      # @default -- See `values.yaml`
+      env:
+        API_ROUTE: "/api"
+        AUTO_REPO_SPECS: "https://github.com/lsst-sqre/system-test@prod"
+        CULL_KERNEL_IDLE_TIMEOUT: "432000"  # 5 days
+        CULL_KERNEL_CONNECTED: "True"
+        CULL_KERNEL_INTERVAL: "300"  # 5 minutes
+        FIREFLY_ROUTE: "/portal/app"
+        HUB_ROUTE: "/nb/hub"
+        NO_ACTIVITY_TIMEOUT: "432000"  # 5 days
+        RSP_SITE_TYPE: "science"
+        TAP_ROUTE: "/api/tap"
+        TUTORIAL_NOTEBOOKS_URL: "https://github.com/lsst/tutorial-notebooks@main"
+        TUTORIAL_NOTEBOOKS_DIR: "/opt/lsst/software/notebooks-at-build-time/tutorial-notebooks"
+
+      # -- Extra annotations to add to user lab pods
+      extraAnnotations: {}
+
+      # -- Files to be mounted as ConfigMaps inside the user lab pod.
+      # `contents` contains the file contents. Set `modify` to true to make
+      # the file writable in the pod.
+      # @default -- See `values.yaml`
+      files:
+        /opt/lsst/software/jupyterlab/lsst_dask.yml: |
+          # No longer used, but preserves compatibility with runlab.sh
+          dask_worker.yml: |
+            enabled: false
+        /opt/lsst/software/jupyterlab/panda/idds.cfg.client.template: |
+          # Licensed under the Apache License, Version 2.0 (the "License");
+          # You may not use this file except in compliance with the License.
+          # You may obtain a copy of the License at
+          # http://www.apache.org/licenses/LICENSE-2.0
+          #
+          # Authors:
+          # - Wen Guan, <wen.guan@cern.ch>, 2020
+          [common]
+          # if logdir is configured, idds will write to idds.log in this
+          # directory, else idds will go to stdout/stderr. With supervisord,
+          # it's good to write to stdout/stderr, then supervisord can manage
+          # and rotate logs.
+          # logdir = /var/log/idds
+          loglevel = INFO
+          [rest]
+          host = https://iddsserver.cern.ch:443/idds
+          #url_prefix = /idds
+          #cacher_dir = /tmp
+          cacher_dir = /data/idds
+
+      # -- Path inside the lab container where custom JupyterLab configuration
+      # is stored
+      jupyterlabConfigDir: "/opt/lsst/software/jupyterlab"
+
+      # -- Prefix of home directory path to add before the username. This is
+      # the path inside the container, not the path of the volume.
+      homedirPrefix: "/home"
+
+      # -- Schema for home directory construction. Choose between `username`
+      # (paths like `/home/rachel`) and `initialThenUsername` (paths like
+      # `/home/r/rachel`).
+      homedirSchema: "username"
+
+      # -- Portion of the home directory path after the username. This is
+      # intended for environments that want the JupyterLab home directory to
+      # be a subdirectory of the user's home directory in some external
+      # environment.
+      homedirSuffix: ""
+
+      # -- Containers run as init containers with each user pod. Each should
+      # set `name`, `image` (a Docker image and pull policy specification),
+      # and `privileged`, and may contain `volumeMounts` (similar to the main
+      # `volumeMountss` configuration). If `privileged` is true, the container
+      # will run as root with all capabilities. Otherwise it will run as the
+      # user.
+      initContainers: []
+
+      # -- Command executed in the container to start the lab
+      labStartCommand:
+        - "/opt/lsst/software/jupyterlab/runlab.sh"
+
+      # -- Prefix for namespaces for user labs. To this will be added a dash
+      # (`-`) and the user's username.
+      namespacePrefix: "nublado"
+
+      # -- Node selector rules for user lab pods
+      nodeSelector: {}
+
+      nss:
+        # -- Base `/etc/passwd` file for lab containers
+        # @default -- See `values.yaml`
+        basePasswd: |
+          root:x:0:0:root:/root:/bin/bash
+          bin:x:1:1:bin:/bin:/sbin/nologin
+          daemon:x:2:2:daemon:/sbin:/sbin/nologin
+          adm:x:3:4:adm:/var/adm:/sbin/nologin
+          lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+          sync:x:5:0:sync:/sbin:/bin/sync
+          shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
+          halt:x:7:0:halt:/sbin:/sbin/halt
+          mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
+          operator:x:11:0:operator:/root:/sbin/nologin
+          games:x:12:100:games:/usr/games:/sbin/nologin
+          ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
+          tss:x:59:59:Account used by the trousers package to sandbox the tcsd daemon:/dev/null:/sbin/nologin
+          dbus:x:81:81:System message bus:/:/sbin/nologin
+          nobody:x:99:99:Nobody:/:/sbin/nologin
+          systemd-network:x:192:192:systemd Network Management:/:/sbin/nologin
+          lsst_lcl:x:1000:1000::/home/lsst_lcl:/bin/bash
+
+        # -- Base `/etc/group` file for lab containers
+        # @default -- See `values.yaml`
+        baseGroup: |
+          root:x:0:
+          bin:x:1:
+          daemon:x:2:
+          sys:x:3:
+          adm:x:4:
+          tty:x:5:
+          disk:x:6:
+          lp:x:7:
+          mem:x:8:
+          kmem:x:9:
+          wheel:x:10:
+          cdrom:x:11:
+          mail:x:12:
+          man:x:15:
+          dialout:x:18:
+          floppy:x:19:
+          games:x:20:
+          utmp:x:22:
+          tape:x:33:
+          utempter:x:35:
+          video:x:39:
+          ftp:x:50:
+          lock:x:54:
+          tss:x:59:
+          audio:x:63:
+          dbus:x:81:
+          screen:x:84:
+          nobody:x:99:
+          users:x:100:
+          systemd-journal:x:190:
+          systemd-network:x:192:
+          cgred:x:997:
+          ssh_keys:x:998:
+          input:x:999:
+
+      # -- Pull secret to use for labs. Set to the string `pull-secret` to use
+      # the normal pull secret from Vault.
+      # @default -- Do not use a pull secret
+      pullSecret: null
+
+      # -- Directory in the lab under which runtime information such as
+      # tokens, environment variables, and container information will be
+      # mounted
+      runtimeMountsDir: "/opt/lsst/software/jupyterlab"
+
+      # -- Secrets to set in the user pods. Each should have a `secretKey` key
+      # pointing to a secret in the same namespace as the controller
+      # (generally `nublado-secret`) and `secretRef` pointing to a field in
+      # that key.
+      secrets: []
+
+      # -- Available lab sizes. Sizes must be chosen from `fine`,
+      # `diminutive`, `tiny`, `small`, `medium`, `large`, `huge`,
+      # `gargantuan`, and `colossal` in that order. Each should specify the
+      # maximum CPU equivalents and memory. SI suffixes for memory are
+      # supported. Sizes will be shown in the order defined here, and the
+      # first defined size will be the default.
+      # @default -- See `values.yaml`
+      sizes:
+        - size: "small"
+          cpu: 1.0
+          memory: "4Gi"
+        - size: "medium"
+          cpu: 2.0
+          memory: "8Gi"
+        - size: "large"
+          cpu: 4.0
+          memory: "16Gi"
+
+      # -- How long to wait for Kubernetes to spawn a lab in seconds. This
+      # should generally be shorter than the spawn timeout set in JupyterHub.
+      spawnTimeout: 600
+
+      # -- Select where `/tmp` in the lab will come from. Choose between
+      # `disk` (node-local ephemeral storage) and `memory` (tmpfs capped at
+      # 25% of the available memory).
+      tmpSource: "memory"
+
+      # -- Tolerations for user lab pods
+      tolerations: []
+
+      # -- Volumes that will be in lab pods or init containers. This supports
+      # NFS, HostPath, and PVC volume types (differentiated in source.type).
+      volumes: []
+      # volumes:
+      # - name: "project"
+      #   source:
+      #     type: nfs
+      #     readOnly: true
+      #     serverPath: "/share1/project"
+      #     server: "10.87.86.26"
+
+      # -- Volumes that should be mounted in lab pods.
+      volumeMounts: []
+      # volumeMounts:
+      # - containerPath: "/project"
+      #   readOnly: true
+      #   volumeName: "project"
+
+    metrics:
+      # -- Whether to enable sending metrics
+      enabled: false
+
+      # -- Name under which to log metrics. Generally there is no reason to
+      # change this.
+      application: "nublado"
+
+      events:
+        # -- Topic prefix for events. It may sometimes be useful to change this
+        # in development environments.
+        topicPrefix: "lsst.square.metrics.events"
+
+      schemaManager:
+        # -- URL of the Confluent-compatible schema registry server
+        # @default -- Sasquatch in the local cluster
+        registryUrl: "http://sasquatch-schema-registry.sasquatch.svc.cluster.local:8081"
+
+        # -- Suffix to add to all registered subjects. This is sometimes useful
+        # for experimentation during development.
+        suffix: ""
+
+# JupyterHub configuration handled directly by this chart rather than by Zero
+# to JupyterHub.
+hub:
+  # -- Whether to use the cluster-internal PostgreSQL server instead of an
+  # external server. This is not used directly by the Nublado chart, but
+  # controls how the database password is managed.
+  internalDatabase: false
+
+  # -- Minimum remaining token lifetime when spawning a lab. The token cannot
+  # be renewed, so it should ideally live as long as the lab does. If the
+  # token has less remaining lifetime, the user will be redirected to
+  # reauthenticate before spawning a lab.
+  # @default -- `jupyterhub.cull.maxAge` if lab culling is enabled, else none
+  minimumTokenLifetime: null
+
+  # -- Resource limits and requests for the Hub
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "1"
+      memory: "512Mi"
+    requests:
+      cpu: "6m"
+      memory: "130Mi"
+
+  timeout:
+    # -- Timeout for JupyterLab to start in seconds. Currently this sometimes
+    # takes over 60 seconds for reasons we don't understand.
+    startup: 90
+
+  # -- Whether to put each user's lab in a separate domain. This is strongly
+  # recommended for security, but requires wildcard DNS and cert-manager
+  # support and requires subdomain support be enabled in Gafaelfawr.
+  useSubdomains: false
+
+# Configuration for the Zero to JupyterHub subchart.
+jupyterhub:
+  cull:
+    # -- Enable the lab culler.
+    enabled: true
+
+    # -- Default idle timeout before the lab is automatically deleted in
+    # seconds
+    # @default -- 432000 (5 days)
+    timeout: 432000
+
+    # -- How frequently to check for idle labs in seconds
+    # @default -- 3600 (1 hour)
+    every: 3600
+
+    # -- Whether to log out the user (from JupyterHub) when culling their lab
+    users: false
+
+    # -- Whether to remove named servers when culling their lab
+    removeNamedServers: true
+
+    # -- Maximum age of a lab regardless of activity
+    # @default -- 2160000 (25 days)
+    maxAge: 2160000
+
+  hub:
+    # -- Whether to require metrics requests to be authenticated
+    authenticatePrometheus: false
+
+    image:
+      # -- Image to use for JupyterHub
+      name: "ghcr.io/lsst-sqre/nublado-jupyterhub"
+
+      # -- Tag of image to use for JupyterHub
+      tag: "8.8.0"
+
+    # -- Resource limits and requests
+    # @default -- See `values.yaml`
+    resources:
+      limits:
+        cpu: "900m"
+        memory: "1Gi"  # Should support about 200 users
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+    db:
+      # -- Type of database to use
+      type: "postgres"
+
+      # -- Database password (not used)
+      # @default -- Comes from nublado-secret
+      password: "true"
+
+      # -- Whether to automatically update DB schema at Hub start
+      upgrade: false
+
+      # -- URL of PostgreSQL server
+      # @default -- Use the in-cluster PostgreSQL installed by Phalanx
+      url: "postgresql://nublado3@postgres.postgres/jupyterhub"
+
+    # -- Security context for JupyterHub container
+    # @default -- See `values.yaml`
+    containerSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      allowPrivilegeEscalation: false
+
+    # -- Base URL on which JupyterHub listens
+    baseUrl: "/nb"
+
+    # -- Existing secret to use for private keys
+    existingSecret: "nublado-secret"
+
+    # -- Additional environment variables to set
+    # @default -- Gets `JUPYTERHUB_CRYPT_KEY` from `nublado-secret`
+    extraEnv:
+      JUPYTERHUB_CRYPT_KEY:
+        valueFrom:
+          secretKeyRef:
+            name: "nublado-secret"
+            key: "hub.config.CryptKeeper.keys"
+
+    # -- Additional volumes to make available to JupyterHub
+    # @default -- The `hub-config` `ConfigMap` and the Gafaelfawr token
+    extraVolumes:
+      - name: "hub-config"
+        configMap:
+          name: "hub-config"
+      - name: "hub-gafaelfawr-token"
+        secret:
+          secretName: "hub-gafaelfawr-token"
+
+    # -- Additional volume mounts for JupyterHub
+    # @default -- `hub-config` and the Gafaelfawr token
+    extraVolumeMounts:
+      - name: "hub-config"
+        mountPath: "/usr/local/etc/jupyterhub/jupyterhub_config.d"
+      - name: "hub-gafaelfawr-token"
+        mountPath: "/etc/gafaelfawr"
+
+    networkPolicy:
+      # -- Whether to enable the default `NetworkPolicy` (currently, the
+      # upstream one does not work correctly)
+      enabled: false
+
+    loadRoles:
+      server:
+        # -- Default scopes for the user's lab, overridden to allow the lab to
+        # delete itself (which we use for our added menu items)
+        # @default -- See `values.yaml`
+        scopes:
+          - "access:servers!user"
+          - "delete:servers!user"
+          - "users:activity!user"
+
+  ingress:
+    # -- Whether to enable the default ingress. Should always be disabled
+    # since we install our own `GafaelfawrIngress` to avoid repeating the
+    # global hostname and manually configuring authentication
+    enabled: false
+
+  prePuller:
+    continuous:
+      # -- Whether to run the JupyterHub continuous prepuller (the Nublado
+      # controller does its own prepulling)
+      enabled: false
+
+    hook:
+      # -- Whether to run the JupyterHub hook prepuller (the Nublado
+      # controller does its own prepulling)
+      enabled: false
+
+  proxy:
+    service:
+      # -- Only expose the proxy to the cluster, overriding the default of
+      # exposing the proxy directly to the Internet
+      type: "ClusterIP"
+
+    chp:
+      networkPolicy:
+        # -- Enable access to the proxy from other namespaces, since we put
+        # each user's lab environment in its own namespace
+        interNamespaceAccessLabels: "accept"
+
+      # -- Resource limits and requests for proxy pod
+      # @default -- See `values.yaml`
+      resources:
+        limits:
+          cpu: "1"
+          memory: "400Mi"
+        requests:
+          cpu: "5m"
+          memory: "30Mi"
+
+  scheduling:
+    userScheduler:
+      # -- Whether the user scheduler should be enabled
+      enabled: false
+
+    userPlaceholder:
+      # -- Whether to spawn placeholder pods representing fake users to force
+      # autoscaling in advance of running out of resources
+      enabled: false
+
+cloudsql:
+  # -- Enable the Cloud SQL Auth Proxy, used with Cloud SQL databases on
+  # Google Cloud
+  enabled: false
+
+  # -- Affinity rules for the Cloud SQL Auth Proxy pod
+  affinity: {}
+
+  image:
+    # -- Cloud SQL Auth Proxy image to use
+    repository: "gcr.io/cloudsql-docker/gce-proxy"
+
+    # -- Resource requests and limits for Cloud SQL pod
+    # @default -- See `values.yaml`
+    resources:
+      limits:
+        cpu: "50m"
+        memory: "64Mi"
+      requests:
+        cpu: "1m"
+        memory: "10Mi"
+
+    # -- Pull policy for Cloud SQL Auth Proxy images
+    pullPolicy: "IfNotPresent"
+
+    # -- Cloud SQL Auth Proxy tag to use
+    tag: "1.37.6"
+
+  # -- Instance connection name for a Cloud SQL PostgreSQL instance
+  # @default -- None, must be set if Cloud SQL Auth Proxy is enabled
+  instanceConnectionName: ""
+
+  # -- Resource limits and requests for the Cloud SQL Proxy pod
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: "100m"
+      memory: "20Mi"
+    requests:
+      cpu: "5m"
+      memory: "7Mi"
+
+  # -- Annotations for the Cloud SQL Auth Proxy pod
+  podAnnotations: {}
+
+  # -- Node selection rules for the Cloud SQL Auth Proxy pod
+  nodeSelector: {}
+
+  # -- The Google service account that has an IAM binding to the
+  # `cloud-sql-proxy` Kubernetes service account and has the `cloudsql.client`
+  # role
+  # @default -- None, must be set if Cloud SQL Auth Proxy is enabled
+  serviceAccount: null
+
+  # -- Tolerations for the Cloud SQL Auth Proxy pod
+  tolerations: []
+
+# JupyterHub proxy configuration handled directly by this chart rather than by
+# Zero to JupyterHub.
+proxy:
+  ingress:
+    # -- Additional annotations to add to the proxy ingress (also used to talk
+    # to JupyterHub and all user labs)
+    # @default -- See `values.yaml`
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"  # 5 minutes
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "300"  # 5 minutes
+
+# Configuration for Nublado secrets management.
+secrets:
+  # -- Whether to use the new secrets management mechanism. If enabled, the
+  # Vault nublado secret will be split into a nublado secret for JupyterHub
+  # and a nublado-lab-secret secret used as a source for secret values for the
+  # user's lab.
+  templateSecrets: true
+
+# The following will be set by parameters injected by Argo CD and should not
+# be set in the individual environment values files.
+global:
+  # -- Base URL for the environment
+  # @default -- Set by Argo CD
+  baseUrl: null
+
+  # -- Host name for ingress
+  # @default -- Set by Argo CD
+  host: null
+
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: null

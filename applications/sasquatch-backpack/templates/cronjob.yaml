@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: sasquatch-backpack
+spec:
+  schedule: {{.Values.schedule}}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            sasquatch-backpack-redis-client: 'true'
+        spec:
+          containers:
+          - name: sasquatch-backpack
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command:
+            - sasquatchbackpack
+            - usgs-earthquake-data
+            - -d
+            - "10"
+            - "0"
+            - "--post"
+            envFrom:
+            - configMapRef:
+                name: sasquatch-backpack
+          restartPolicy: OnFailure

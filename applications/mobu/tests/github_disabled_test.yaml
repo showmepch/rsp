@@ -1,0 +1,60 @@
+suite: Github Integration Disabled
+set:
+  # GitHub integrations are disabled by default
+  global:
+    host: "example.com"
+tests:
+  - it: "Should not include github things in the config file ConfigMap"
+    template: "configmap.yaml"
+    asserts:
+      - containsDocument:
+          kind: "ConfigMap"
+          apiVersion: v1
+      - equal:
+          path: "data['config.yaml']"
+          value: |
+            autostart: []
+            availableServices: []
+            gafaelfawrTimeout: null
+            githubCiApp: null
+            githubRefreshApp: null
+            logLevel: INFO
+            metrics:
+              application: mobu
+              enabled: false
+              events:
+                topicPrefix: lsst.square.metrics.events
+              schemaManager:
+                registryUrl: http://sasquatch-schema-registry.sasquatch.svc.cluster.local:8081
+                suffix: ""
+            pathPrefix: /mobu
+            profile: production
+            sentryEnvironment: null
+            sentryTracesSampleConfig: 0
+            slackAlerts: true
+  - it: "Should not inject GitHub CI app secrets into the StatefulSet env"
+    template: "stateful-set.yaml"
+    asserts:
+      - notContains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_CI_APP_ID"
+      - notContains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_CI_APP_PRIVATE_KEY"
+      - notContains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_CI_APP_WEBHOOK_SECRET"
+  - it: "Should not inject GitHub refresh app secrets into the StatefulSet env"
+    template: "stateful-set.yaml"
+    asserts:
+      - notContains:
+          path: "spec.template.spec.containers[0].env"
+          any: true
+          content:
+            name: "MOBU_GITHUB_REFRESH_APP_WEBHOOK_SECRET"

@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "squareone.fullname" . }}
+  labels:
+    {{- include "squareone.labels" . | nindent 4 }}
+data:
+  squareone.config.yaml: |
+    siteName: {{ .Values.config.siteName | quote }}
+    baseUrl: {{ .Values.global.baseUrl | quote }}
+    environmentName: {{ .Values.global.environmentName | quote }}
+    siteDescription: {{ .Values.config.siteDescription | quote }}
+    docsBaseUrl: {{ .Values.config.docsBaseUrl | quote }}
+    {{- if .Values.config.semaphoreUrl }}
+    semaphoreUrl: {{ .Values.config.semaphoreUrl | quote }}
+    {{- end}}
+    {{- if .Values.config.timesSquareUrl }}
+    timesSquareUrl: {{ .Values.config.timesSquareUrl | quote }}
+    {{- end}}
+    {{- if .Values.config.coManageRegistryUrl }}
+    coManageRegistryUrl: {{ .Values.config.coManageRegistryUrl | quote }}
+    {{- end}}
+    {{- if .Values.config.plausibleDomain }}
+    plausibleDomain: {{ .Values.config.plausibleDomain | quote }}
+    {{- end}}
+    apiAspectPageMdx: {{ .Values.config.apiAspectPageMdx | quote }}
+    docsPageMdx: {{ .Values.config.docsPageMdx | quote }}
+    supportPageMdx: {{ .Values.config.supportPageMdx | quote }}
+    verifyEmailPageMdx: {{ .Values.config.verifyEmailPageMdx | quote }}
+    emailVerifiedPageMdx: {{ .Values.config.emailVerifiedPageMdx | quote }}
+    pendingApprovalPageMdx: {{ .Values.config.pendingApprovalPageMdx | quote }}
+    pendingVerificationPageMdx: {{ .Values.config.pendingVerificationPageMdx | quote }}
+    {{- if .Values.config.sentryDsn }}
+    sentryDsn: {{ .Values.config.sentryDsn | quote }}
+    {{- end}}
+    sentryTracesSampleRate: {{ .Values.config.sentryTracesSampleRate }}
+    sentryReplaysSessionSampleRate: {{ .Values.config.sentryReplaysSessionSampleRate }}
+    sentryReplaysOnErrorSampleRate: {{ .Values.config.sentryReplaysOnErrorSampleRate }}
+    sentryDebug: {{ .Values.config.sentryDebug }}
+    enableAppsMenu: {{ .Values.config.enableAppsMenu }}
+    appLinks:
+      {{- toYaml .Values.config.appLinks | nindent 6 }}

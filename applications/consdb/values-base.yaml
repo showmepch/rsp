@@ -1,0 +1,30 @@
+db:
+  user: "oods"
+  passwordkey: "oods-password"
+  host: "postgresdb01.ls.lsst.org"
+  database: "butler"
+lfa:
+  s3EndpointUrl: "https://s3.ls.lsst.org"
+hinfo:
+  latiss:
+    enable: true
+    tag: "25.3.2"
+    logConfig: "consdb.hinfo=DEBUG"
+  lsstcomcam:
+    enable: false
+    tag: "25.3.2"
+    logConfig: "consdb.hinfo=DEBUG"
+  lsstcam:
+    enable: true
+    tag: "25.3.2"
+pq:
+  image:
+    tag: "main"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 20Gi
+  limits:
+    cpu: 500m
+    memory: 20Gi

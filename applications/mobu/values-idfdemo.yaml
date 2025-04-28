@@ -1,0 +1,4 @@
+config:
+  logLevel: DEBUG
+  profile: development
+  autostart: []

@@ -1,0 +1,6 @@
+ingress-nginx:
+  controller:
+    service:
+      externalTrafficPolicy: Local
+    podLabels:
+      hub.jupyter.org/network-access-proxy-http: "true"

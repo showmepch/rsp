@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "gafaelfawr"
+  labels:
+    {{- include "gafaelfawr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gafaelfawr.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: "frontend"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "gafaelfawr.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: "frontend"
+        gafaelfawr-redis-client: "true"
+        gafaelfawr-redis-ephemeral-client: "true"
+    spec:
+      {{- if .Values.cloudsql.enabled }}
+      serviceAccountName: "gafaelfawr"
+      {{- else }}
+      automountServiceAccountToken: false
+      {{- end }}
+      containers:
+        - name: "gafaelfawr"
+          env:
+            {{- include "gafaelfawr.envVars" (dict "Chart" .Chart "Release" .Release "Values" .Values) | nindent 12 }}
+            {{- if .Values.config.metrics.enabled }}
+            - name: "KAFKA_CLIENT_CERT_PATH"
+              value: "/etc/gafaelfawr-kafka/user.crt"
+            - name: "KAFKA_CLIENT_KEY_PATH"
+              value: "/etc/gafaelfawr-kafka/user.key"
+            - name: "KAFKA_CLUSTER_CA_PATH"
+              value: "/etc/gafaelfawr-kafka/ca.crt"
+            {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          livenessProbe:
+            httpGet:
+              path: "/health"
+              port: "http"
+            periodSeconds: 300
+            timeoutSeconds: 10
+          ports:
+            - containerPort: 8080
+              name: "http"
+              protocol: "TCP"
+          {{- if (gt (int .Values.replicaCount) 1) }}
+          readinessProbe:
+            httpGet:
+              path: "/health"
+              port: "http"
+            periodSeconds: 60
+            timeoutSeconds: 10
+          {{- else }}
+          readinessProbe:
+            httpGet:
+              path: "/"
+              port: "http"
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "all"
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: "config"
+              mountPath: "/etc/gafaelfawr"
+              readOnly: true
+            {{- if .Values.config.metrics.enabled }}
+            - name: "kafka"
+              mountPath: "/etc/gafaelfawr-kafka/ca.crt"
+              readOnly: true
+              subPath: "ssl.truststore.crt"
+            - name: "kafka"
+              mountPath: "/etc/gafaelfawr-kafka/user.crt"
+              readOnly: true
+              subPath: "ssl.keystore.crt"
+            - name: "kafka"
+              mountPath: "/etc/gafaelfawr-kafka/user.key"
+              readOnly: true
+              subPath: "ssl.keystore.key"
+            {{- end }}
+            {{- if .Values.config.ldap.kerberosConfig }}
+            - name: "keytab"
+              mountPath: "/etc/krb5.keytab"
+              readOnly: true
+              subPath: "ldap-keytab"
+            - name: "kerberos-config"
+              mountPath: "/etc/krb5.conf"
+              readOnly: true
+              subPath: "krb5.conf"
+            - name: "tmp"
+              mountPath: "/tmp"
+            {{- end }}
+      {{- if .Values.cloudsql.enabled }}
+      initContainers:
+        {{- include "gafaelfawr.cloudsqlSidecar" . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      volumes:
+        - name: "config"
+          configMap:
+            name: "gafaelfawr"
+        {{- if .Values.config.metrics.enabled }}
+        - name: "kafka"
+          secret:
+            secretName: "gafaelfawr-kafka"
+        {{- end }}
+        {{- if .Values.config.ldap.kerberosConfig }}
+        - name: "keytab"
+          secret:
+            secretName: "gafaelfawr-keytab"
+        - name: "kerberos-config"
+          configMap:
+            name: "gafaelfawr-kerberos"
+        - name: "tmp"
+          emptyDir: {}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

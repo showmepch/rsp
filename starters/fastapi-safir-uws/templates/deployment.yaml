@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "<CHARTNAME>"
+  labels:
+    {{- include "<CHARTNAME>.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "<CHARTNAME>.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: "frontend"
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.frontend.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "<CHARTNAME>.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: "frontend"
+        <CHARTNAME>-redis-client: "true"
+    spec:
+      {{- with .Values.frontend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: "<CHARTNAME>"
+      containers:
+        - name: "<CHARTNAME>"
+          env:
+            - name: "<CHARTENVPREFIX>_ARQ_QUEUE_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "<CHARTNAME>"
+                  key: "redis-password"
+            {{- if .Values.config.slackAlerts }}
+            - name: "<CHARTENVPREFIX>_SLACK_WEBHOOK"
+              valueFrom:
+                secretKeyRef:
+                  name: "<CHARTNAME>"
+                  key: "slack-webhook"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: "<CHARTNAME>"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          ports:
+            - containerPort: 8080
+              name: "http"
+              protocol: "TCP"
+          readinessProbe:
+            httpGet:
+              path: "/api/<CHARTNAME>/availability"
+              port: "http"
+          {{- with .Values.frontend.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "all"
+            readOnlyRootFilesystem: true
+      {{- with .Values.frontend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      {{- with .Values.frontend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,13 @@
+config:
+  logLevel: "INFO"
+  logProfile: "development"
+  db:
+    echo: true
+  outputVolume:
+    storageClassName: "sdf-data-rubin"
+    subPath: "shared/campaigns/users/usdf-cm-prod"
+  htcondor:
+    fsRemoteDir:
+      storageClassName: "sdf-group-rubin"
+      subPath: "services/htcondor/shared"
+      mountPath: "/sdf/group/rubin/services/htcondor/shared"

@@ -1,0 +1,25 @@
+argo-cd:
+  configs:
+    cm:
+      url: "https://summit-lsp.lsst.codes/argo-cd"
+      dex.config: |
+        connectors:
+          # Auth using GitHub.
+          # See https://dexidp.io/docs/connectors/github/
+          - type: github
+            id: github
+            name: GitHub
+            config:
+              clientID: 8da9b82e0da60985fb86
+              # Reference to key in argo-secret Kubernetes resource
+              clientSecret: $dex.clientSecret
+              orgs:
+                - name: lsst-sqre
+    rbac:
+      policy.csv: |
+        g, lsst-sqre:friends, role:admin
+        g, lsst-sqre:square, role:admin
+
+  server:
+    ingress:
+      hostname: "summit-lsp.lsst.codes"

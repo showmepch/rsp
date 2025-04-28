@@ -1,0 +1,213 @@
+# Configuration of Influx endpoint to receive monitoring data.
+config:
+  # -- Hostname for the singleton InfluxDBv2 collection point
+  influxdbHostname: "monitoring.lsst.cloud"
+  # -- InfluxDBv2 organization
+  influxdbOrg: "square"
+
+# InfluxDB v2 server component.  Soon to be replaced with Influx DB v3.
+influxdb2:
+  adminUser:
+    # -- InfluxDB internal organization
+    organization: "square"
+
+    # -- Bucket to dump raw monitoring data into
+    bucket: "monitoring_raw_"
+
+    # -- User name
+    user: "admin"
+
+    # -- How long to keep data
+    retention_policy: "30d"
+
+    # -- Where we store secrets to run the server
+    existingSecret: monitoring
+
+  # -- InfluxDB2 pod disruption budget.
+  # @default -- disabled; nonsensical for single replica
+  pdb:
+    create: false
+
+  # -- InfluxDB2 ingress configuration.
+  # @default -- disabled, must be enabled and configured at each site
+  ingress:
+    enabled: false
+    tls: true
+    secretName: "tls-influxdb2"
+    hostname: ""
+    className: "nginx"
+    path: "/"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-dns"
+
+  startupProbe:
+    # -- Whether to enable a startup probe
+    enabled: true
+
+    # -- How long to wait before checking the first time
+    initialDelaySeconds: 30
+
+    # -- Period between checking whether InfluxDB has started
+    periodSeconds: 10
+
+    # -- Number of checks to conclude whether InfluxDB won't start.  High
+    # to allow up to 10 minutes for startup, because checking many
+    # shards can be slow.
+    failureThreshold: 60
+
+  livenessProbe:
+    # -- Period between checks for whether InfluxDB is still alive
+    periodSeconds: 10
+
+    # -- Number of checks to conclude whether InfluxDB has died
+    failureThreshold: 10
+
+  # -- Resource limits and requests for the InfluxDB server instance
+  # @default -- See `values.yaml`
+  resources:
+    limits:
+      cpu: 4.0
+      memory: 30Gi
+    requests:
+      cpu: 1.0
+      memory: 1Gi
+
+# Chronograf provides a UI for analyzing the data in Influx.  Unlike the
+# native InfluxDBv2 visualizer, it is capable of doing OIDC authentication.
+chronograf:
+  ## Image Settings
+  ##
+  # -- chronograf image settings
+  # @default -- quay.io/influxdb/chronograf 1.10.3
+  image:
+    repository: "quay.io/influxdb/chronograf"
+    tag: 1.10.6
+    pullPolicy: IfNotPresent
+
+  ## Specify a service type
+  ## ClusterIP is default
+  ## ref: http://kubernetes.io/docs/user-guide/services/
+  ##
+  # -- Chronograf service
+  # @default -- 1 replica, ClusterIP
+  service:
+    replicas: 1
+    type: ClusterIP
+
+  ## Configure resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  # -- Chronograf resource requests/limits
+  # @default -- 1Gi/1CPU request, 30Gi/4CPU limit
+  resources:
+    requests:
+      memory: 1024Mi
+      cpu: 1
+    limits:
+      memory: 30Gi
+      cpu: 4
+
+  # -- Chronograf ingress
+  # @default -- disabled; must be enabled and configured for each site
+  ingress:
+    enabled: false
+    tls: false
+    hostname: ""
+    className: "nginx"
+    path: /chronograf(/|$)
+
+  ## Enable OAuth
+  oauth:
+    # -- Enable Chronograf oauth
+    # Never enable it: it breaks the deployment because it's expecting a static
+    # TOKEN_SECRET.  Instead, to get oauth working, leave this setting as-is
+    # and just configure all the correct environment variables (see below).
+    enabled: false
+
+  # -- Environment for chronograf
+  # @default -- stock settings for SQuaRE Phalanx deployment
+  env:
+    BASE_PATH: "/chronograf"
+    CUSTOM_AUTO_REFRESH: "1s=1000"
+    HOST_PAGE_DISABLED: true
+    INFLUXDB_URL: "https://monitoring.lsst.cloud"
+    INFLUXDB_ORG: "square"
+
+  # -- Chronograf will read environment variables from this secret
+  envFromSecret: monitoring
+
+  # -- Chronograf update strategy
+  # @default -- Recreate
+  updateStrategy:
+    type: Recreate
+
+# Cronjobs to handle bucket and task creation for alert generation.
+cronjob:
+  image:
+    # -- repository for rubin-influx-tools, which supplies tools and dashboards
+    repository: ghcr.io/lsst-sqre/rubin-influx-tools
+    # -- tag for rubin-influx-tools
+    # @default -- the appVersion of the chart
+    tag: ""
+    # -- imagePullPolicy for cronjobs
+    pullPolicy: "IfNotPresent"
+
+  # -- set to true to enable debug logging
+  debug: false
+
+  bucketmaker:
+    # -- bucketmaker schedule
+    schedule: "*/15 * * * *"
+
+    # -- Resource requests and limits for bucketmaker
+    resources:
+      limits:
+        cpu: "1"
+        memory: "512Mi"
+      requests:
+        cpu: "10m"
+        memory: "128Mi"
+
+  bucketmapper:
+    # -- bucketmapper schedule
+    schedule: "3-59/15 * * * *"
+
+    # -- Resource requests and limits for bucketmapper
+    resources:
+      limits:
+        cpu: "1"
+        memory: "512Mi"
+      requests:
+        cpu: "10m"
+        memory: "128Mi"
+
+  taskmaker:
+    # -- taskmaker schedule
+    schedule: "6-59/15 * * * *"
+
+    # -- Resource requests and limits for taskmaker
+    resources:
+      limits:
+        cpu: "1"
+        memory: "512Mi"
+      requests:
+        cpu: "10m"
+        memory: "128Mi"
+
+    # -- Resource requests and limits for bucketmaker pod
+    # @default -- see `values.yaml`
+    bucketmaker:
+
+
+global:
+  # -- services enabled in this RSP instance
+  # @default -- Set by Argo CD
+  enabledServices: ""
+
+  # -- Host name for instance identification
+  # @default -- Set by Argo CD
+  host: ""
+
+  # -- Base path for Vault secrets
+  # @default -- Set by Argo CD
+  vaultSecretsPath: ""

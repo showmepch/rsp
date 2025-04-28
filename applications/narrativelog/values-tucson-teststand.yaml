@@ -1,0 +1,4 @@
+config:
+  site_id: tucson
+db:
+  host: postgresdb01.tu.lsst.org

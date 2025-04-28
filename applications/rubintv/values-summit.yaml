@@ -1,0 +1,61 @@
+rubintv:
+  siteTag: "summit"
+
+  imagePullSecrets:
+  - name: pull-secret
+
+  frontend:
+    debug: true
+    env:
+    - name: S3_ENDPOINT_URL
+      value: &s3E "https://s3.rubintv.cp.lsst.org"
+    - name: RAPID_ANALYSIS_LOCATION
+      value: "SUMMIT"
+    - name: DDV_DEPLOY_BRANCH
+      value: &dbE "deploy-summit"
+    - name: DDV_BASE_HREF
+      value: "/rubintv/ddv/"
+    - name: DDV_CLIENT_WS_ADDRESS
+      value: "rubintv/ws/ddv"
+    - name: RA_REDIS_HOST
+      value: "redis-service.rapid-analysis.svc.cluster.local"
+    envSecrets:
+    - name: RA_REDIS_PASSWORD
+      secretName: rubintv-secrets
+      secretKey: redis-password
+    image:
+      tag: v2.6.4
+      pullPolicy: Always
+
+  workers:
+    replicas: 1
+    image:
+      repository: ts-dockerhub.lsst.org/rapid-analysis
+      tag: c0039
+      pullPolicy: Always
+    uid: 73006
+    gid: 73006
+    scriptsLocation: /repos/rubintv_analysis_service/scripts
+    script: rubintv_worker.py -a rubintv -p 8080 -l summit
+    env:
+    - name: S3_ENDPOINT_URL
+      value: *s3E
+    - name: DAF_BUTLER_REPOSITORY_INDEX
+      value: "s3://rubin-summit-users/data-repos.yaml"
+    - name: DAF_BUTLER_REPOSITORY
+      value: "/sdf/group/rubin/repo/ir2/butler.yaml"
+    - name: DEPLOY_BRANCH
+      value: *dbE
+    nfsMountpoint:
+    - name: project-rubintv-ddv-config
+      containerPath: /var/ddv-config
+      readOnly: false
+      server: nfs-project.cp.lsst.org
+      serverPath: /project/rubintv/ddv-config
+    resources:
+      requests:
+        cpu: 0.5
+        memory: 1G
+      limits:
+        cpu: 1.0
+        memory: 2.5G
